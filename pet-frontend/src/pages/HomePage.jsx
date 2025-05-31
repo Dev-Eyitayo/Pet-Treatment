@@ -1,15 +1,18 @@
 import { BellIcon } from "@heroicons/react/24/outline";
 import { Link } from "react-router-dom";
 import ThemeToggle from "../components/ThemeToggle"; // Update path if needed
+import DoctorList from "../components/DoctorList";
 
 const pets = [
   {
+    id: 1,
     name: "Buddy",
     breed: "Golden Retriever",
     image:
       "https://images.unsplash.com/photo-1558788353-f76d92427f16?w=100&q=80",
   },
   {
+    id: 2,
     name: "Whiskers",
     breed: "Siamese Cat",
     image:
@@ -19,11 +22,13 @@ const pets = [
 
 const appointments = [
   {
+    id: 1,
     title: "Annual Checkup",
     doctor: "Dr. Emily Carter",
     time: "Tomorrow, 2 PM",
   },
   {
+    id: 2,
     title: "Vaccination",
     doctor: "Dr. Mark Johnson",
     time: "Next Week, 10 AM",
@@ -53,7 +58,7 @@ const todaysAppointments = [
 
 const appointmentRequests = [
   {
-    id: 101,
+    id: 1,
     petName: "Charlie",
     petImage:
       "https://images.unsplash.com/photo-1517423440428-a5a00ad493e8?w=100&q=80",
@@ -62,7 +67,7 @@ const appointmentRequests = [
     reason: "New patient consultation",
   },
   {
-    id: 102,
+    id: 2,
     petName: "Luna",
     petImage:
       "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=100&q=80",
@@ -73,7 +78,7 @@ const appointmentRequests = [
 ];
 
 export default function Home() {
-  const userRole = "doctor"; // Toggle "user" or "doctor"
+  const userRole = "user"; // Toggle "user" or "doctor"
 
   return (
     <div className='max-w-7xl mx-auto p-1 sm:p-2 lg:p-6'>
@@ -109,37 +114,10 @@ export default function Home() {
         <div className='grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8'>
           {/* My Pets */}
           <section>
-            <h2 className='text-xl sm:text-2xl font-semibold mb-4 sm:mb-6 text-gray-900 dark:text-white'>
-              My Pets
+            <h2 className='text-2xl font-bold mb-6 text-gray-900 dark:text-white'>
+              Meet Our Doctors
             </h2>
-            <div className='space-y-4 sm:space-y-6'>
-              {pets.map((pet) => (
-                <div
-                  key={pet.name}
-                  className='flex items-center justify-between bg-white dark:bg-slate-800 rounded-xl shadow-md p-4 sm:p-5 hover:shadow-lg transition'
-                >
-                  <div className='flex items-center gap-4 sm:gap-5'>
-                    <img
-                      src={pet.image}
-                      alt={pet.name}
-                      className='w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover shadow-md'
-                    />
-                    <div>
-                      <p className='font-semibold text-gray-900 dark:text-white text-base sm:text-lg'>
-                        {pet.name} —{" "}
-                        <span className='font-normal'>{pet.breed}</span>
-                      </p>
-                    </div>
-                  </div>
-                  <Link
-                    to={`/pets/${pet.name}`}
-                    className='bg-blue-500 hover:bg-blue-600 text-white font-semibold px-4 py-2 rounded-lg shadow-sm transition focus:outline-none focus:ring-2 focus:ring-blue-500/70 text-center'
-                  >
-                    View
-                  </Link>
-                </div>
-              ))}
-            </div>
+            <DoctorList />
           </section>
 
           {/* Upcoming Appointments */}
@@ -150,8 +128,8 @@ export default function Home() {
             <div className='space-y-4 sm:space-y-6'>
               {appointments.map((appt) => (
                 <div
-                  key={appt.title}
-                  className='flex items-center justify-between bg-white dark:bg-slate-800 rounded-xl shadow-md p-4 sm:p-5 hover:shadow-lg transition'
+                  key={appt.id}
+                  className='flex items-center justify-between bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 sm:p-5 hover:shadow-md transition'
                 >
                   <div className='flex items-center gap-4 sm:gap-5'>
                     <div>
@@ -165,7 +143,7 @@ export default function Home() {
                     </div>
                   </div>
                   <Link
-                    to={`/appointments/${appt.title}`}
+                    to={`/appointments/${appt.id}`} // Use appt.id here
                     className='bg-blue-500 hover:bg-blue-600 text-white font-semibold px-4 py-2 rounded-lg shadow-sm transition focus:outline-none focus:ring-2 focus:ring-blue-500/70 text-center'
                   >
                     View
@@ -186,7 +164,7 @@ export default function Home() {
               {todaysAppointments.map((appt) => (
                 <div
                   key={appt.id}
-                  className='flex flex-col sm:flex-row sm:items-center sm:justify-between bg-white dark:bg-slate-800 rounded-xl shadow-md p-4 sm:p-5 hover:shadow-lg transition'
+                  className='flex flex-col sm:flex-row sm:items-center sm:justify-between bg-white dark:bg-slate-800 rounded-xl shadow-md p-4 sm:p-5 hover:shadow-md transition'
                 >
                   <div className='flex items-center gap-4 sm:gap-5'>
                     <img
@@ -227,7 +205,7 @@ export default function Home() {
               {appointmentRequests.map((req) => (
                 <div
                   key={req.id}
-                  className='flex flex-col sm:flex-row sm:items-center sm:justify-between bg-white dark:bg-slate-800 rounded-xl shadow-md p-4 sm:p-5 hover:shadow-lg transition'
+                  className='flex flex-col sm:flex-row sm:items-center sm:justify-between bg-white dark:bg-slate-800 rounded-xl shadow-md p-4 sm:p-5 hover:shadow-md transition'
                 >
                   <div className='flex items-center gap-4 sm:gap-5'>
                     <img
@@ -260,9 +238,8 @@ export default function Home() {
           </section>
         </div>
       )}
-
       {/* Book Appointment Button for users only */}
-      {userRole === "user" && (
+      {/* {userRole === "user" && (
         <div className='mt-8 sm:mt-10'>
           <Link
             to='/book-appointment'
@@ -271,7 +248,7 @@ export default function Home() {
             Book Appointment
           </Link>
         </div>
-      )}
+      )} */}
     </div>
   );
 }

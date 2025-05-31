@@ -1,9 +1,16 @@
-import { Home, Calendar, PawPrint, User, LogOut } from "lucide-react";
+import {
+  Home,
+  Calendar,
+  PawPrint,
+  User,
+  LogOut,
+  Stethoscope,
+} from "lucide-react";
 import { NavLink } from "react-router-dom";
 
 const navItems = [
   { name: "Home", icon: Home, to: "/" },
-  { name: "Appointments", icon: Calendar, to: "/appointments" },
+  { name: "Apply as Doctor", icon: Stethoscope, to: "/doctor-application" },
   { name: "Pets", icon: PawPrint, to: "/pets" },
   { name: "Profile", icon: User, to: "/profile" },
 ];
