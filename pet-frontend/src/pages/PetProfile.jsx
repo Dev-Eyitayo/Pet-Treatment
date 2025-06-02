@@ -94,7 +94,7 @@ export default function PetProfile() {
   }
 
   return (
-    <div className='max-w-4xl mx-auto px-6 py-12'>
+    <div className='max-w-4xl mx-auto px-2 py-12'>
       <div className='flex justify-between items-center mb-8'>
         <h1 className='text-3xl font-bold text-text-light dark:text-text-dark'>
           Pet Profile

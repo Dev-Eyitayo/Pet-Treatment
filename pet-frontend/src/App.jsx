@@ -11,6 +11,7 @@ import BookAppointment from "./pages/BookAppointment";
 import AppointmentRequest from "./pages/AppointmentRequest";
 import PetList from "./pages/PetList";
 import DoctorApplication from "./pages/DoctorApplication";
+import Profile from "./components/ProfilePage/Profile";
 
 function App() {
   return (
@@ -27,13 +28,15 @@ function App() {
             <Route index element={<HomePage />} />
             <Route path='appointments/:id' element={<AppointmentDetails />} />
             <Route path='requests/:id' element={<AppointmentRequest />} />
-            <Route path="/pets/:petId" element={<PetProfile />} />
-            <Route path="/pets" element={<PetList />} />
+            <Route path='/pets/:petId' element={<PetProfile />} />
+            <Route path='/pets' element={<PetList />} />
 
-            <Route path="/add-pet" element={<AddPet />} />
-            <Route path="/book-appointment" element={<BookAppointment />} />
-            <Route path="/doctor-application" element={<DoctorApplication />} />
-          
+            {/* <Route path="/profile" element={<Profile />} /> */}
+
+            <Route path='/add-pet' element={<AddPet />} />
+            <Route path='/book-appointment' element={<BookAppointment />} />
+            <Route path='/doctor-application' element={<DoctorApplication />} />
+            <Route path='/profile' element={<Profile />} />
             {/* Add more nested routes here if needed */}
           </Route>
         </Routes>
