@@ -9,11 +9,11 @@ export default function SignUp() {
       <div className='max-w-md w-full space-y-6'>
         <div className='text-center'>
           {/* Show image only on small/mobile devices */}
-          <img
+          {/* <img
             src='/signup-graphic.png'
             alt='Header Art'
             className='w-full rounded-md mb-4 block md:hidden'
-          />
+          /> */}
           <h2 className='text-2xl font-bold text-text-light dark:text-text-dark'>
             Sign up to continue
           </h2>
