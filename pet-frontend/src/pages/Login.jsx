@@ -1,9 +1,114 @@
+import { useState, useCallback } from "react";
+import { toast } from "react-toastify";
+import axios from "axios";
 import InputField from "../components/InputField";
 import Checkbox from "../components/CheckBox";
 import Button from "../components/Button";
 import GoogleAuthButton from "../components/GoogleAuthButton";
 
+// Form data structure
+const initialFormData = {
+  email: "",
+  password: "",
+};
+
 export default function Login() {
+  const [formData, setFormData] = useState(initialFormData);
+  const [rememberMe, setRememberMe] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Handle input changes for form fields
+  const handleInputChange = useCallback((e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  }, []);
+
+  // Toggle remember me checkbox
+  const handleCheckboxChange = useCallback(() => {
+    setRememberMe((prev) => !prev);
+  }, []);
+
+  // Validate form fields
+  const validateForm = () => {
+    if (!formData.email || !formData.password) {
+      toast.error("Please fill out all required fields.", {
+        position: "bottom-right",
+      });
+      return false;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      toast.error("Please enter a valid email address.", {
+        position: "bottom-right",
+      });
+      return false;
+    }
+    return true;
+  };
+
+  // Handle form submission
+  const handleSubmit = useCallback(
+    async (e) => {
+      e.preventDefault();
+
+      if (!validateForm()) {
+        return;
+      }
+
+      setIsLoading(true);
+
+      try {
+        const payload = {
+          email: formData.email,
+          password: formData.password,
+        };
+
+        const response = await axios.post(
+          `${import.meta.env.VITE_API_BASE_URL}/api/user/login/`,
+          payload,
+          {
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        const { token } = response.data;
+
+        // Store token if rememberMe is checked
+        if (rememberMe) {
+          localStorage.setItem("authToken", token);
+        } else {
+          sessionStorage.setItem("authToken", token); // Session storage for non-persistent login
+        }
+
+        toast.success("Logged in successfully!", {
+          position: "bottom-right",
+        });
+        window.location.href = "/"; // Consider using react-router-dom
+      } catch (error) {
+        const errors = error.response?.data || {};
+        let errorMessage = "Failed to log in. Please try again.";
+
+        if (errors.non_field_errors) {
+          errorMessage = errors.non_field_errors[0];
+        } else if (errors.email) {
+          errorMessage = `Email: ${errors.email[0]}`;
+        } else if (errors.password) {
+          errorMessage = `Password: ${errors.password[0]}`;
+        } else if (errors.detail) {
+          errorMessage = errors.detail;
+        }
+
+        toast.error(errorMessage, {
+          position: "bottom-right",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [formData, rememberMe]
+  );
+
   return (
     <div className='min-h-screen bg-background-light text-text-light dark:bg-background-dark dark:text-text-dark flex items-center justify-center px-4 transition-colors duration-300'>
       <div className='max-w-md w-full space-y-6'>
@@ -19,22 +124,38 @@ export default function Login() {
           </h2>
         </div>
 
-        <form className='space-y-4'>
+        <form className='space-y-4' onSubmit={handleSubmit}>
           <InputField
             placeholder='Enter your email'
             name='email'
             type='email'
+            value={formData.email}
+            onChange={handleInputChange}
           />
-          <InputField placeholder='Password' name='password' type='password' />
+          <InputField
+            placeholder='Password'
+            name='password'
+            type='password'
+            value={formData.password}
+            onChange={handleInputChange}
+          />
 
-          {/* Pass the label as a child span for better control, like Signup page */}
-          <Checkbox id='remember'>
-            <span className='text-text-light dark:text-text-dark'>
-              Remember me
-            </span>
-          </Checkbox>
+          <Checkbox
+            id='remember'
+            checked={rememberMe}
+            onChange={handleCheckboxChange}
+            label={
+              <span className='text-text-light dark:text-text-dark'>
+                Remember me
+              </span>
+            }
+          />
 
-          <Button type='submit' label='Log In' />
+          <Button
+            type='submit'
+            label={isLoading ? "Logging In..." : "Log In"}
+            disabled={isLoading}
+          />
         </form>
 
         <div className='flex items-center justify-center'>

@@ -1,21 +1,29 @@
-export default function Checkbox({ label, id, onChange }) {
+export default function Checkbox({ id, checked, onChange, label }) {
   return (
-    <label className='flex items-center space-x-2 text-sm text-text-light dark:text-text-dark'>
+    <div className='flex items-center space-x-2'>
       <input
         id={id}
         type='checkbox'
-        className='accent-primary dark:accent-primary-dark'
+        checked={checked}
         onChange={onChange}
+        className='h-4 w-4 accent-primary dark:accent-primary-dark focus:ring-primary border-gray-300 rounded'
       />
-      <span>
-        I agree to the{" "}
-        <a
-          href='#'
-          className='text-primary dark:text-primary-dark font-medium underline'
-        >
-          Terms and Conditions
-        </a>
-      </span>
-    </label>
+      <label
+        htmlFor={id}
+        className='text-sm text-text-light dark:text-text-dark font-normal'
+      >
+        {label || (
+          <>
+            I agree to the{" "}
+            <a
+              href='/terms'
+              className='text-primary dark:text-primary-dark font-medium underline hover:text-primary-dark'
+            >
+              Terms and Conditions
+            </a>
+          </>
+        )}
+      </label>
+    </div>
   );
 }
