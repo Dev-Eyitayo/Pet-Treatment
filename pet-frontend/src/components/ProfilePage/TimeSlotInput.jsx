@@ -5,9 +5,9 @@ const TimeSlotInput = ({ day, slots, onChange, errors }) => {
     onChange(updatedSlots);
   };
 
-  const addSlot = () => {
-    onChange([...slots, { from: "", to: "" }]);
-  };
+  // const addSlot = () => {
+  //   onChange([...slots, { from: "", to: "" }]);
+  // };
 
   return (
     <div className='border border-gray-300 dark:border-slate-600 rounded-lg p-4 bg-gray-50 dark:bg-slate-700 shadow-sm w-full box-border'>

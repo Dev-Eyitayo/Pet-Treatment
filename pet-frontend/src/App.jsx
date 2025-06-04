@@ -12,6 +12,7 @@ import AppointmentRequest from "./pages/AppointmentRequest";
 import PetList from "./pages/PetList";
 import DoctorApplication from "./pages/DoctorApplication";
 import Profile from "./components/ProfilePage/Profile";
+import DoctorProfile from "./pages/DoctorProfile";
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
           <Route path='/' element={<MainLayout />}>
             {/* index = default page for this layout (HomePage) */}
             <Route index element={<HomePage />} />
+            <Route path='/doctors/:doctorId' element={<DoctorProfile />} />
             <Route path='appointments/:id' element={<AppointmentDetails />} />
             <Route path='requests/:id' element={<AppointmentRequest />} />
             <Route path='/pets/:petId' element={<PetProfile />} />

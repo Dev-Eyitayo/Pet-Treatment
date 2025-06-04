@@ -7,7 +7,7 @@ const MainLayout = () => {
   const dummyUser = {
     firstname: "John",
     lastname: "Doe",
-    role: "doctor",
+    role: "user",
     profilepicture:
       "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&q=80",
   };
