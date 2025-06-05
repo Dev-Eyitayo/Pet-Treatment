@@ -1,90 +1,112 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-
-const allDoctors = [
-  {
-    id: 1,
-    name: "Dr. Grace Adewale",
-    specialization: "Veterinary Surgeon",
-    experience: 7,
-    image: "https://randomuser.me/api/portraits/women/44.jpg",
-  },
-  {
-    id: 2,
-    name: "Dr. John Okafor",
-    specialization: "Animal Nutritionist",
-    experience: 5,
-    image: "https://randomuser.me/api/portraits/men/46.jpg",
-  },
-  {
-    id: 3,
-    name: "Dr. Amaka Ojo",
-    specialization: "Pet Dermatologist",
-    experience: 6,
-    image: "https://randomuser.me/api/portraits/women/48.jpg",
-  },
-  {
-    id: 4,
-    name: "Dr. Adebayo Yusuf",
-    specialization: "Veterinary Pathologist",
-    experience: 4,
-    image: "https://randomuser.me/api/portraits/men/45.jpg",
-  },
-  {
-    id: 5,
-    name: "Dr. Bola Fashola",
-    specialization: "Veterinary Oncologist",
-    experience: 8,
-    image: "https://randomuser.me/api/portraits/women/42.jpg",
-  },
-  {
-    id: 6,
-    name: "Dr. Kingsley Obi",
-    specialization: "Pet Cardiologist",
-    experience: 6,
-    image: "https://randomuser.me/api/portraits/men/48.jpg",
-  },
-  {
-    id: 7,
-    name: "Dr. Ada Eze",
-    specialization: "Veterinary Radiologist",
-    experience: 5,
-    image: "https://randomuser.me/api/portraits/women/50.jpg",
-  },
-  {
-    id: 8,
-    name: "Dr. Chuka Nnamdi",
-    specialization: "Exotic Pet Specialist",
-    experience: 7,
-    image: "https://randomuser.me/api/portraits/men/50.jpg",
-  },
-  {
-    id: 9,
-    name: "Dr. Yetunde Ogunleye",
-    specialization: "Animal Behaviorist",
-    experience: 9,
-    image: "https://randomuser.me/api/portraits/women/52.jpg",
-  },
-  {
-    id: 10,
-    name: "Dr. Tunde Ayeni",
-    specialization: "Pet Ophthalmologist",
-    experience: 3,
-    image: "https://randomuser.me/api/portraits/men/52.jpg",
-  },
-];
+import axios from "../utils/axiosInstance";
+import { toast } from "react-toastify";
 
 const itemsPerPage = 6;
 
 export default function DoctorList() {
+  const [doctors, setDoctors] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const totalPages = Math.ceil(allDoctors.length / itemsPerPage);
+  useEffect(() => {
+    const fetchDoctors = async () => {
+      setIsLoading(true);
+      setError(null);
+
+      const token =
+        localStorage.getItem("authToken") ||
+        sessionStorage.getItem("authToken");
+
+      if (!token) {
+        toast.error("No authentication token found. Please log in.", {
+          position: "bottom-right",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const response = await axios.get(
+          `${import.meta.env.VITE_API_BASE_URL}/api/doctorprofiles/`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        // Handle paginated or non-paginated response
+        const fetchedDoctors = response.data.results
+          ? response.data.results
+          : response.data;
+
+        // Debug: Log response
+        console.log("Fetched doctors:", fetchedDoctors);
+
+        // Map response to UI structure
+        const mappedDoctors = fetchedDoctors.map((profile) => {
+          // Handle profilepicture: use full URL if provided, otherwise prepend base URL or use placeholder
+          let imageUrl =
+            "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?ixlib=rb-4.0.3&auto=format&fit=crop&w=256&q=80";
+          if (profile.doctor.profilepicture) {
+            imageUrl = profile.doctor.profilepicture.startsWith("http")
+              ? profile.doctor.profilepicture
+              : `${import.meta.env.VITE_API_BASE_URL}${profile.doctor.profilepicture}`;
+          }
+          console.log(
+            `Doctor ${profile.doctor.firstname} image URL:`,
+            imageUrl
+          ); // Debug
+
+          return {
+            id: profile.doctor.id,
+            name:
+              `Dr. ${profile.doctor.firstname || ""} ${profile.doctor.lastname || ""}`.trim() ||
+              "Dr. Unknown",
+            specialization: profile.specialization || "Veterinarian",
+            experience: profile.years_experience || 0,
+            image: imageUrl,
+          };
+        });
+
+        setDoctors(mappedDoctors);
+        setTotalPages(
+          response.data.count
+            ? Math.ceil(response.data.count / itemsPerPage)
+            : Math.ceil(mappedDoctors.length / itemsPerPage)
+        );
+      } catch (err) {
+        console.error("Failed to fetch doctors:", {
+          status: err.response?.status,
+          data: err.response?.data,
+          message: err.message,
+        });
+        setError("Failed to load doctors. Please try again.");
+        toast.error("Failed to load doctors. Please try again.", {
+          position: "bottom-right",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchDoctors();
+  }, []);
+
+  if (isLoading) {
+    return <div className='text-center p-6'>Loading doctors...</div>;
+  }
+
+  if (error) {
+    return <div className='text-center p-6 text-red-500'>{error}</div>;
+  }
+
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const currentDoctors = allDoctors.slice(
-    startIndex,
-    startIndex + itemsPerPage
-  );
+  const currentDoctors = doctors.slice(startIndex, startIndex + itemsPerPage);
 
   return (
     <section className='max-w-6xl mx-auto'>
@@ -97,7 +119,15 @@ export default function DoctorList() {
             <img
               src={doctor.image}
               alt={doctor.name}
+              width='80'
+              height='80'
               className='w-20 h-20 mx-auto rounded-full object-cover border-2 border-primary mb-3'
+              onError={(e) => {
+                console.error(
+                  `Failed to load image for ${doctor.name}: ${doctor.image}`
+                );
+                e.target.src = "https://via.placeholder.com/100"; // Fallback on error
+              }}
             />
             <h3 className='text-sm font-semibold text-gray-900 dark:text-white'>
               {doctor.name}
@@ -118,21 +148,23 @@ export default function DoctorList() {
       </div>
 
       {/* Pagination */}
-      <div className='flex justify-center items-center space-x-2'>
-        {Array.from({ length: totalPages }, (_, index) => (
-          <button
-            key={index + 1}
-            onClick={() => setCurrentPage(index + 1)}
-            className={`px-3 py-1 rounded-full text-sm font-medium ${
-              currentPage === index + 1
-                ? "bg-blue-600 text-white"
-                : "bg-gray-200 dark:bg-slate-700 dark:text-white"
-            }`}
-          >
-            {index + 1}
-          </button>
-        ))}
-      </div>
+      {totalPages > 1 && (
+        <div className='flex justify-center items-center space-x-2'>
+          {Array.from({ length: totalPages }, (_, index) => (
+            <button
+              key={index + 1}
+              onClick={() => setCurrentPage(index + 1)}
+              className={`px-3 py-1 rounded-full text-sm font-medium ${
+                currentPage === index + 1
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-200 dark:bg-slate-700 dark:text-white"
+              }`}
+            >
+              {index + 1}
+            </button>
+          ))}
+        </div>
+      )}
     </section>
   );
 }

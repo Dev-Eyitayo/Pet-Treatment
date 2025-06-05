@@ -5,6 +5,7 @@ import InputField from "../components/InputField";
 import Checkbox from "../components/CheckBox";
 import Button from "../components/Button";
 import GoogleAuthButton from "../components/GoogleAuthButton";
+import { useNavigate } from "react-router-dom";
 
 // Form data structure
 const initialFormData = {
@@ -16,7 +17,7 @@ export default function Login() {
   const [formData, setFormData] = useState(initialFormData);
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-
+  const navigate = useNavigate();
   // Handle input changes for form fields
   const handleInputChange = useCallback((e) => {
     const { name, value } = e.target;
@@ -62,6 +63,10 @@ export default function Login() {
           password: formData.password,
         };
 
+        console.log(
+          "Login API URL:",
+          `${import.meta.env.VITE_API_BASE_URL}/api/user/login/`
+        );
         const response = await axios.post(
           `${import.meta.env.VITE_API_BASE_URL}/api/user/login/`,
           payload,
@@ -72,20 +77,33 @@ export default function Login() {
           }
         );
 
-        const { token } = response.data;
+        console.log("Login response:", response.data);
+        const { access } = response.data; // Use 'access' instead of 'token'
+        console.log("Stored token:", access);
 
-        // Store token if rememberMe is checked
         if (rememberMe) {
-          localStorage.setItem("authToken", token);
+          localStorage.setItem("authToken", access);
+          console.log(
+            "Stored in localStorage:",
+            localStorage.getItem("authToken")
+          );
         } else {
-          sessionStorage.setItem("authToken", token); // Session storage for non-persistent login
+          sessionStorage.setItem("authToken", access);
+          console.log(
+            "Stored in sessionStorage:",
+            sessionStorage.getItem("authToken")
+          );
         }
 
         toast.success("Logged in successfully!", {
           position: "bottom-right",
         });
-        window.location.href = "/"; // Consider using react-router-dom
+        navigate("/");
       } catch (error) {
+        console.error("Login error:", {
+          status: error.response?.status,
+          data: error.response?.data,
+        });
         const errors = error.response?.data || {};
         let errorMessage = "Failed to log in. Please try again.";
 

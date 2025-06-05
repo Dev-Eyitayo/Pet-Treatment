@@ -1,50 +1,100 @@
-import { Outlet } from "react-router-dom";
+import { Outlet, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 import Navigation from "../components/Navigation";
 import ThemeToggle from "../components/ThemeToggle";
+import axios from "axios";
+import { toast } from "react-toastify";
+import {jwtDecode} from "jwt-decode";
 
 const MainLayout = () => {
-  // Dummy data for user
-  const dummyUser = {
-    firstname: "John",
-    lastname: "Doe",
-    role: "user",
-    profilepicture:
-      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&q=80",
+  const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const token =
+        localStorage.getItem("authToken") ||
+        sessionStorage.getItem("authToken");
+
+      console.log(
+        "MainLayout API URL:",
+        `${import.meta.env.VITE_API_BASE_URL}/api/user/me/`
+      );
+      console.log("Retrieved token:", token);
+
+      if (!token) {
+        console.log("No token found, redirecting to login");
+        setUser(null);
+        setIsLoading(false);
+        navigate("/login");
+        return;
+      }
+
+      try {
+        const decoded = jwtDecode(token);
+        console.log("Token payload:", decoded);
+        const now = Math.floor(Date.now() / 1000);
+        if (decoded.exp < now) {
+          console.log("Token expired");
+          throw new Error("Token expired");
+        }
+        console.log("Request headers:", { Authorization: `Bearer ${token}` });
+        const res = await axios.get(
+          `${import.meta.env.VITE_API_BASE_URL}/api/user/me/`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        console.log("User data response:", res.data);
+        setUser(res.data);
+      } catch (err) {
+        console.error("Failed to fetch user:", {
+          status: err.response?.status,
+          data: err.response?.data,
+          message: err.message,
+          config: err.config,
+        });
+        setUser(null);
+        localStorage.removeItem("authToken");
+        sessionStorage.removeItem("authToken");
+        toast.error("Session expired. Please log in again.", {
+          position: "bottom-right",
+        });
+        navigate("/login");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchUser();
+  }, [navigate]);
+
+  const handleLogout = () => {
+    localStorage.removeItem("authToken");
+    sessionStorage.removeItem("authToken");
+    setUser(null);
+    toast.success("Logged out successfully!", {
+      position: "bottom-right",
+    });
+    navigate("/login");
   };
 
-  // Dummy data for profileData
-  const dummyProfileData = {
-    bio: "Experienced cardiologist with a passion for patient care.",
-    specialization: "Cardiology",
-    available_days: ["Monday", "Wednesday", "Friday"],
-    available_times: {
-      Monday: [{ from: "09:00", to: "17:00" }],
-      Wednesday: [{ from: "10:00", to: "16:00" }],
-      Friday: [{ from: "08:00", to: "14:00" }],
-    },
-    years_experience: 12,
-    address: "123 Heartbeat Lane, Health City",
-  };
-
-  // Dummy updateProfile function
   const updateProfile = (formData) => {
     console.log("Profile updated with:", formData);
-    // Simulate saving data (no backend yet)
   };
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <div className='min-h-screen bg-background-light text-text-light dark:bg-background-dark dark:text-text-dark transition-colors duration-300 flex'>
       <Navigation />
       <main className='flex-1 md:ml-64 pt-4 pb-20 md:pb-4 px-4'>
-        
-        {/* Pass dummy data to nested routes via Outlet context */}
-        <Outlet
-          context={{
-            user: dummyUser,
-            profileData: dummyProfileData,
-            updateProfile,
-          }}
-        />
+        <Outlet context={{ user, updateProfile, handleLogout }} />
       </main>
     </div>
   );
