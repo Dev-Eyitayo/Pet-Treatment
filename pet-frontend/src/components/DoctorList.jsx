@@ -51,7 +51,7 @@ export default function DoctorList() {
         const mappedDoctors = fetchedDoctors.map((profile) => {
           // Handle profilepicture: use full URL if provided, otherwise prepend base URL or use placeholder
           let imageUrl =
-            "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?ixlib=rb-4.0.3&auto=format&fit=crop&w=256&q=80";
+            "https://cdn-icons-png.flaticon.com/512/1077/1077114.png";
           if (profile.doctor.profilepicture) {
             imageUrl = profile.doctor.profilepicture.startsWith("http")
               ? profile.doctor.profilepicture
