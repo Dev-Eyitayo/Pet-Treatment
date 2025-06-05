@@ -1,51 +1,38 @@
-from rest_framework import generics, status, views
-from rest_framework.permissions import IsAuthenticated
+from rest_framework import viewsets, permissions, status
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from .models import Pet
 from .serializers import PetSerializer
 
-class PetListCreateView(generics.GenericAPIView):
-    queryset = Pet.objects.all()
+class PetViewSet(viewsets.ModelViewSet):
     serializer_class = PetSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         user = self.request.user
-        user_pets = Pet.objects.filter(owner=user)
-        return user_pets
+        if user.is_staff or getattr(user, 'role', None) == 'doctor':
+            return Pet.objects.all()
+        return Pet.objects.filter(owner=user)
 
-    def get(self, request,):
-        pets = self.get_queryset()
-        serializer = self.get_serializer(pets, many=True)
-        return Response(serializer.data)
+    def perform_create(self, serializer):
+        # Owner is set to current user
+        serializer.save(owner=self.request.user)
 
-    def post(self, request):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save(owner=request.user)
-        return Response(data=serializer.data, status=201)
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
 
-class PetDetailView(generics.GenericAPIView):
-    queryset = Pet.objects.all()
-    serializer_class = PetSerializer
-    permission_classes = [IsAuthenticated]
+        if request.user != instance.owner:
+            raise PermissionDenied("You do not have permission to modify this pet.")
 
-    def get_queryset(self):
-        return Pet.objects.filter(owner=self.request.user)
+        return super().update(request, *args, **kwargs)
 
-    def get(self, request):
-        pet = self.get_object()
-        serializer = self.get_serializer(pet)
-        return Response(serializer.data,status=200)
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
 
-    def put(self, request):
-        pet = self.get_object()
-        serializer = self.get_serializer(pet, data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data)
+        if request.user != instance.owner:
+            return Response(
+                {"detail": "You do not have permission to delete this pet."},
+                status=status.HTTP_403_FORBIDDEN
+            )
 
-    def delete(self, request,):
-        pet = self.get_object()
-        pet.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return super().destroy(request, *args, **kwargs)

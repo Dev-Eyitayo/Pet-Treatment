@@ -15,11 +15,8 @@ const navItems = [
   { name: "Profile", icon: User, to: "/profile" },
 ];
 
-const Navigation = () => {
-  const handleLogout = () => {
-    // TODO: Add your actual logout logic here
-    console.log("Logged out");
-  };
+const Navigation = ({handleLogout}) => {
+  
 
   return (
     <>
