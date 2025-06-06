@@ -4,7 +4,8 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.contrib.auth import get_user_model
 
-
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError
 
 
 ALLOWED_SIGNUP_ROLES = ['user', 'doctor'] 
@@ -30,12 +31,64 @@ class SignUpSerializer(serializers.ModelSerializer):
             password=validated_data['password'],
             role=role
         )
+        
+        
+        
+        
+
 
 class UserSerializer(serializers.ModelSerializer):
+    profilepicture = serializers.ImageField(required=False, allow_null=True)
+
     class Meta:
         model = CustomUser
-        fields = ['id', 'email', 'firstname', 'lastname', 'role', 'profilepicture']
-    
+        fields = ['id', 'email', 'firstname', 'lastname', 'profilepicture', 'role', 'created_at']
+        read_only_fields = ['id', 'role', 'created_at']
+
+    def validate_email(self, value):
+        # Ensure email is unique, excluding the current user
+        user = self.context['request'].user
+        if CustomUser.objects.filter(email=value).exclude(id=user.id).exists():
+            raise serializers.ValidationError("A user with this email already exists.")
+        try:
+            validate_email(value)
+        except ValidationError:
+            raise serializers.ValidationError("Invalid email format.")
+        return value
+
+    def validate_firstname(self, value):
+        if len(value) > 50:
+            raise serializers.ValidationError("First name must be 50 characters or fewer.")
+        return value
+
+    def validate_lastname(self, value):
+        if len(value) > 50:
+            raise serializers.ValidationError("Last name must be 50 characters or fewer.")
+        return value
+
+    def validate_profilepicture(self, value):
+        if value:
+            # Validate file type
+            allowed_types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+            if value.content_type not in allowed_types:
+                raise serializers.ValidationError(
+                    "Profile picture must be a valid image (jpg, png, gif, webp)."
+                )
+            # Validate file size (5MB)
+            if value.size > 5 * 1024 * 1024:
+                raise serializers.ValidationError(
+                    "Profile picture size must be less than 5MB."
+                )
+        return value
+
+    def update(self, instance, validated_data):
+        # Handle profilepicture clearing
+        if 'profilepicture' in validated_data and validated_data['profilepicture'] is None:
+            instance.profilepicture.delete(save=False)  # Remove existing file
+            instance.profilepicture = None
+        return super().update(instance, validated_data)        
+        
+
     def get_profilepicture(self, obj):
         if obj.profilepicture:
             return obj.profilepicture.url

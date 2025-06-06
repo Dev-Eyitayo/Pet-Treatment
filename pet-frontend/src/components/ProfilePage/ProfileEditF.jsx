@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"; // Add useEffect
+import { useState } from "react";
 import { toast } from "react-toastify";
 import InputField from "./InputField";
 import AvailableDaysSelector from "./AvailableDaysSelector";
@@ -24,6 +24,7 @@ const ProfileEditForm = ({ user, profileData, updateProfile, setEditMode }) => {
     bio: profileData?.bio || "",
     specialization: profileData?.specialization || "",
     available_days: profileData?.available_days || [],
+    // Initialize available_times with single slot objects
     available_times: Object.keys(profileData?.available_times || {}).reduce(
       (acc, day) => {
         const slot = profileData.available_times[day][0] || {
@@ -44,17 +45,6 @@ const ProfileEditForm = ({ user, profileData, updateProfile, setEditMode }) => {
       ? `${import.meta.env.VITE_API_BASE_URL}${user.profilepicture}`
       : null
   );
-
-  // Sync profilePicturePreview with user.profilepicture when user prop changes
-  useEffect(() => {
-    setProfilePicturePreview(
-      user?.profilepicture
-        ? `${import.meta.env.VITE_API_BASE_URL}${user.profilepicture}`
-        : null
-    );
-  }, [user?.profilepicture]);
-
-  // ... (validate and handleChange unchanged)
 
   const validate = () => {
     const errs = {};
@@ -237,10 +227,12 @@ const ProfileEditForm = ({ user, profileData, updateProfile, setEditMode }) => {
         validatedForm.years_experience.toString()
       );
       doctorFormData.append("address", validatedForm.address);
+      // Send available_days as JSON string as fallback
       doctorFormData.append(
         "available_days",
         JSON.stringify(validatedForm.available_days)
       );
+      // Convert available_times to backend format: { day: [{ from, to }] }
       const backendAvailableTimes = {};
       Object.keys(validatedForm.available_times).forEach((day) => {
         backendAvailableTimes[day] = [validatedForm.available_times[day]];
@@ -262,18 +254,7 @@ const ProfileEditForm = ({ user, profileData, updateProfile, setEditMode }) => {
           console.log(`${key}: ${value}`);
         }
       }
-      const response = await updateProfile({
-        user: userFormData,
-        doctor: doctorFormData,
-      });
-      // Update profilePicturePreview with server response
-      if (response.user?.profilepicture) {
-        setProfilePicturePreview(
-          `${import.meta.env.VITE_API_BASE_URL}${response.user.profilepicture}`
-        );
-      } else if (validatedForm.clearProfilePicture) {
-        setProfilePicturePreview(null);
-      }
+      await updateProfile({ user: userFormData, doctor: doctorFormData });
       setEditMode(false);
       toast.success("Profile updated successfully!", {
         position: "bottom-right",
@@ -308,7 +289,6 @@ const ProfileEditForm = ({ user, profileData, updateProfile, setEditMode }) => {
     }
   };
 
-  // ... (JSX unchanged)
   return (
     <form
       onSubmit={handleSubmit}
