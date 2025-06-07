@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 import axios from "axios";
-
+import LoadingSpinner from "../components/LoadingSpinner";
 export default function PetProfile() {
   const { petId } = useParams();
   const navigate = useNavigate();
@@ -14,11 +15,11 @@ export default function PetProfile() {
     name: "",
     species: "",
     breed: "",
-    age: "",
-    image: null, // Changed from 'photo' to 'image' and set to null for file
+    age: null, // Initialize as null instead of ""
+    image: null,
   });
   const [errors, setErrors] = useState({});
-  const [imagePreview, setImagePreview] = useState(""); // For previewing the uploaded image
+  const [imagePreview, setImagePreview] = useState("");
 
   useEffect(() => {
     const fetchPet = async () => {
@@ -46,10 +47,10 @@ export default function PetProfile() {
           name: response.data.name,
           species: response.data.species,
           breed: response.data.breed,
-          age: response.data.age,
-          image: null, // File input starts empty
+          age: response.data.age, // Keep as number
+          image: null,
         });
-        setImagePreview(response.data.image || ""); // Set initial image preview
+        setImagePreview(response.data.image || "");
       } catch (err) {
         console.error("Fetch pet error:", err.response?.data || err.message);
         setError(err.response?.data?.detail || "Failed to fetch pet details");
@@ -71,9 +72,8 @@ export default function PetProfile() {
     if (!formData.name.trim()) errs.name = "Pet name is required";
     if (!formData.species.trim()) errs.species = "Species is required";
     if (!formData.breed.trim()) errs.breed = "Breed is required";
-    if (!formData.age || isNaN(formData.age) || formData.age <= 0)
+    if (formData.age === null || isNaN(formData.age) || formData.age <= 0)
       errs.age = "Valid age is required";
-    // Optional: Validate file type and size
     if (
       formData.image &&
       !["image/jpeg", "image/png", "image/gif", "image/webp"].includes(
@@ -93,7 +93,6 @@ export default function PetProfile() {
     if (name === "image") {
       const file = files[0];
       setFormData((prev) => ({ ...prev, image: file }));
-      // Update image preview
       if (file) {
         const reader = new FileReader();
         reader.onloadend = () => setImagePreview(reader.result);
@@ -101,6 +100,12 @@ export default function PetProfile() {
       } else {
         setImagePreview(pet?.image || "");
       }
+    } else if (name === "age") {
+      // Convert to number or null if empty
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value === "" ? null : Number(value),
+      }));
     } else {
       setFormData((prev) => ({ ...prev, [name]: value }));
     }
@@ -128,7 +133,7 @@ export default function PetProfile() {
       formDataToSend.append("name", formData.name);
       formDataToSend.append("species", formData.species);
       formDataToSend.append("breed", formData.breed);
-      formDataToSend.append("age", Number(formData.age));
+      formDataToSend.append("age", Number(formData.age)); // Already a number
       if (formData.image) {
         formDataToSend.append("image", formData.image);
       }
@@ -146,7 +151,15 @@ export default function PetProfile() {
 
       setPet(response.data);
       setEditMode(false);
+      setFormData({
+        name: response.data.name,
+        species: response.data.species,
+        breed: response.data.breed,
+        age: response.data.age, // Keep as number
+        image: null,
+      });
       setImagePreview(response.data.image || "");
+      toast.success("Pet updated successfully!");
     } catch (err) {
       console.error("Update pet error:", err.response?.data || err.message);
       setError(err.response?.data?.detail || "Failed to update pet");
@@ -385,7 +398,7 @@ export default function PetProfile() {
                 name='age'
                 type='number'
                 min='0'
-                value={formData.age}
+                value={formData.age ?? ""} // Use empty string for input if null
                 onChange={handleChange}
                 className={`mt-1 w-full px-4 py-2 rounded-md border ${
                   errors.age
@@ -479,7 +492,7 @@ export default function PetProfile() {
                     name: pet.name,
                     species: pet.species,
                     breed: pet.breed,
-                    age: pet.age,
+                    age: pet.age, // Reset to original number
                     image: null,
                   });
                   setImagePreview(pet.image || "");

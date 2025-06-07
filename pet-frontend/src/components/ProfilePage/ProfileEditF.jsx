@@ -388,6 +388,7 @@ const ProfileEditForm = ({ user, profileData, updateProfile, setEditMode }) => {
                 label='Email'
                 id='email'
                 type='email'
+                disabled={true}
                 value={form.email}
                 onChange={(value) => handleChange("email", value)}
                 error={errors.email}

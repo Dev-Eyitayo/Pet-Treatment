@@ -131,12 +131,7 @@ export default function Login() {
     <div className='min-h-screen bg-background-light text-text-light dark:bg-background-dark dark:text-text-dark flex items-center justify-center px-4 transition-colors duration-300'>
       <div className='max-w-md w-full space-y-6'>
         <div className='text-center'>
-          {/* Show image only on small/mobile devices */}
-          {/* <img
-            src='/login-graphic.png'
-            alt='Login Art'
-            className='w-full rounded-md mb-4 block md:hidden'
-          /> */}
+          
           <h2 className='text-2xl font-bold text-text-light dark:text-text-dark'>
             Log in to your account
           </h2>

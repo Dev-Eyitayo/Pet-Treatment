@@ -119,6 +119,7 @@ const MainLayout = () => {
       // toast.success("Profile updated successfully!", {
       //   position: "bottom-right",
       // });
+      window.location.reload();
       return { user: userResponse.data, doctor: doctorResponse?.data };
     } catch (err) {
       console.error("Update profile error:", {

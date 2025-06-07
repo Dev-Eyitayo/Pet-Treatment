@@ -10,7 +10,7 @@ class PetViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        if user.is_staff or getattr(user, 'role', None) == 'doctor':
+        if user.is_staff:
             return Pet.objects.all()
         return Pet.objects.filter(owner=user)
 

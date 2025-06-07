@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import axios from "../utils/axiosInstance";
 import { toast } from "react-toastify";
-
+import LoadingSpinner from "./LoadingSpinner";
 const itemsPerPage = 6;
 
 export default function DoctorList() {
@@ -98,7 +98,11 @@ export default function DoctorList() {
   }, []);
 
   if (isLoading) {
-    return <div className='text-center p-6'>Loading doctors...</div>;
+    return (
+      <div className='self-center p-6'>
+        <LoadingSpinner fullScreen />
+      </div>
+    );
   }
 
   if (error) {

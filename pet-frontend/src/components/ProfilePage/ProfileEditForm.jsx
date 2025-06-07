@@ -308,7 +308,7 @@ const ProfileEditForm = ({ user, profileData, updateProfile, setEditMode }) => {
     }
   };
 
-  // ... (JSX unchanged)
+  
   return (
     <form
       onSubmit={handleSubmit}
@@ -407,6 +407,7 @@ const ProfileEditForm = ({ user, profileData, updateProfile, setEditMode }) => {
               <InputField
                 label='Email'
                 id='email'
+                readOnly
                 type='email'
                 value={form.email}
                 onChange={(value) => handleChange("email", value)}

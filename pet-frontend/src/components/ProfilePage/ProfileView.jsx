@@ -138,14 +138,14 @@ const ProfileView = ({ user, profileData }) => {
                 {user.email || "Not provided"}
               </p>
             </div>
-            <div className='bg-gray-50 dark:bg-slate-700/50 p-4 rounded-lg'>
+            {/* <div className='bg-gray-50 dark:bg-slate-700/50 p-4 rounded-lg'>
               <p className='text-sm font-medium text-gray-500 dark:text-gray-400'>
                 Role
               </p>
               <p className='text-gray-800 dark:text-gray-200 mt-1 capitalize'>
                 {user.role || "Not provided"}
               </p>
-            </div>
+            </div> */}
           </div>
         </div>
 
