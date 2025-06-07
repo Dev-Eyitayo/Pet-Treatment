@@ -1,14 +1,16 @@
-# doctor_profile/views.py
-
 from rest_framework import viewsets, permissions, status
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import PermissionDenied, NotFound
 from .models import DoctorProfile, DoctorApplication
 from .serializers import DoctorProfileSerializer, DoctorApplicationSerializer
 from django.contrib.auth import get_user_model
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
+import json
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny, IsAuthenticated
+
+
 
 User = get_user_model()
 
@@ -119,22 +121,20 @@ class DoctorApplicationViewSet(viewsets.ModelViewSet):
 
 
 
-import json
-from rest_framework import viewsets, permissions, status
-from rest_framework.response import Response
-from rest_framework.exceptions import PermissionDenied, NotFound
-from .models import DoctorProfile
-from .serializers import DoctorProfileSerializer, UserSerializer
 
 class DoctorProfileViewSet(viewsets.ModelViewSet):
     queryset = DoctorProfile.objects.all()
     serializer_class = DoctorProfileSerializer
-    permission_classes = [permissions.IsAuthenticated]
+
+    def get_permissions(self):
+        if self.action in ['list', 'retrieve']:
+            return [AllowAny()]  # Allow all users to view profiles
+        return [IsAuthenticated()]  # Require authentication for create/update/delete
 
     def get_object(self):
         if self.kwargs.get('pk') == 'me':
-            if self.request.user.role != 'doctor':
-                raise PermissionDenied("Only doctors can access doctor profiles.")
+            if self.request.user.is_authenticated and self.request.user.role != 'doctor':
+                raise PermissionDenied("Only doctors can access their own profiles via 'me'.")
             try:
                 return DoctorProfile.objects.get(doctor=self.request.user)
             except DoctorProfile.DoesNotExist:
@@ -142,14 +142,7 @@ class DoctorProfileViewSet(viewsets.ModelViewSet):
         return super().get_object()
 
     def list(self, request, *args, **kwargs):
-        if not request.user.is_staff:
-            try:
-                instance = DoctorProfile.objects.get(doctor=request.user)
-                serializer = self.get_serializer(instance)
-                return Response([serializer.data])
-            except DoctorProfile.DoesNotExist:
-                return Response([], status=status.HTTP_200_OK)
-        return super().list(request, *args, **kwargs)
+        return super().list(request, *args, **kwargs)  # Allow all profiles to be listed
 
     def perform_create(self, serializer):
         if self.request.user.role != 'doctor':
@@ -172,11 +165,9 @@ class DoctorProfileViewSet(viewsets.ModelViewSet):
         }
 
         # Parse JSON strings if necessary
-        print("Raw available_days:", doctor_data['available_days'])  # Debug
         if isinstance(doctor_data.get('available_days'), str):
             try:
                 doctor_data['available_days'] = json.loads(doctor_data['available_days'])
-                print("Parsed available_days:", doctor_data['available_days'])  # Debug
             except json.JSONDecodeError:
                 return Response(
                     {"available_days": "Invalid JSON format for available_days"},
@@ -197,7 +188,6 @@ class DoctorProfileViewSet(viewsets.ModelViewSet):
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
-        print("Serializer errors:", serializer.errors)  # Debug
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def partial_update(self, request, *args, **kwargs):
