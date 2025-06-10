@@ -16,7 +16,7 @@ export default function Checkbox({ id, checked, onChange, label }) {
           <>
             I agree to the{" "}
             <a
-              href='/terms'
+              href=''
               className='text-primary dark:text-primary-dark font-medium underline hover:text-primary-dark'
             >
               Terms and Conditions
