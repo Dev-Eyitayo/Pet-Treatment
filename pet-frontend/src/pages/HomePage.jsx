@@ -275,7 +275,7 @@ export default function Home() {
         sessionStorage.getItem("authToken");
 
       if (!token) {
-        toast.error("No authentication token found. Please log in.", {
+        toast.error("No user found. Please log in.", {
           position: "bottom-right",
         });
         setIsLoading(false);

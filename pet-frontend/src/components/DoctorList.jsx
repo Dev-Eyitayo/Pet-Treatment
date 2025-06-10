@@ -100,7 +100,7 @@ export default function DoctorList() {
   if (isLoading) {
     return (
       <div className='self-center p-5'>
-        <LoadingSpinner fullScreen />
+        <LoadingSpinner />
       </div>
     );
   }
