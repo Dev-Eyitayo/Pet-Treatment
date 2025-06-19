@@ -5,9 +5,7 @@ from .serializers import DoctorProfileSerializer, DoctorApplicationSerializer
 from django.contrib.auth import get_user_model
 from rest_framework.response import Response
 from rest_framework.decorators import action
-from rest_framework.exceptions import ValidationError
 import json
-from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 
 
@@ -25,12 +23,9 @@ class DoctorApplicationViewSet(viewsets.ModelViewSet):
         return DoctorApplication.objects.filter(user=self.request.user)
 
     def perform_create(self, serializer):
-        # Check if the user already has a doctor application
-        if DoctorApplication.objects.filter(user=self.request.user).exists():
-            raise ValidationError("You have already submitted an application.")
+        # Removed redundant validation; rely on serializer
         serializer.save(user=self.request.user)
-   
-    
+
     def update(self, request, *args, **kwargs):
         if not request.user.is_staff:
             raise PermissionDenied("You cannot update a doctor application.")
@@ -40,85 +35,28 @@ class DoctorApplicationViewSet(viewsets.ModelViewSet):
         if not request.user.is_staff:
             raise PermissionDenied("You cannot update a doctor application.")
         return super().partial_update(request, *args, **kwargs)
-    
+
     @action(detail=True, methods=['post'], permission_classes=[permissions.IsAdminUser])
     def review(self, request, pk=None):
         application = self.get_object()
-        status_value = request.data.get('status')
+        serializer = ReviewSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        status_value = serializer.validated_data['status']
 
-        if status_value not in ['approved', 'rejected']:
-            return Response({"detail": "Invalid status."}, status=400)
+        # Additional validation: prevent re-reviewing finalized applications
+        if application.status in ['approved', 'rejected']:
+            return Response({"detail": f"Application is already {application.status}."}, status=400)
 
-        application.status = status_value
-        application.save()
+        with transaction.atomic():
+            application.status = status_value
+            application.save()
 
-        if status_value == 'approved':
-            application.user.role = 'doctor'
-            application.user.save()
+            if status_value == 'approved':
+                # Ensure user model has a 'role' field
+                application.user.role = 'doctor'
+                application.user.save()
 
         return Response({"detail": f"Application {status_value} successfully."})
-
-
-
-
-
-
-# class DoctorProfileViewSet(viewsets.ModelViewSet):
-#     queryset = DoctorProfile.objects.all()
-#     serializer_class = DoctorProfileSerializer
-#     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-
-#     def perform_create(self, serializer):
-#         if self.request.user.role != 'doctor':
-#             raise PermissionDenied("Only doctors can create doctor profiles.")
-#         serializer.save(doctor=self.request.user)
-
-#     def update(self, request, *args, **kwargs):
-#         instance = self.get_object()
-#         if instance.doctor != request.user:
-#             raise PermissionDenied("You can only update your own profile.")
-#         return super().update(request, *args, **kwargs)
-
-#     def partial_update(self, request, *args, **kwargs):
-#         instance = self.get_object()
-#         if instance.doctor != request.user:
-#             raise PermissionDenied("You can only partially update your own profile.")
-#         return super().partial_update(request, *args, **kwargs)
-
-#     def destroy(self, request, *args, **kwargs):
-#         instance = self.get_object()
-#         if instance.doctor != request.user:
-#             raise PermissionDenied("You can only delete your own profile.")
-#         return super().destroy(request, *args, **kwargs)
-
-#     def put(self, request, *args, **kwargs):
-#         # Optional: you can explicitly define this, but it's not necessary
-#         return self.update(request, *args, **kwargs)
-
-# @api_view(['GET', 'PUT'])
-# @permission_classes([permissions.IsAuthenticated])
-# def doctor_profile_me(request):
-#     user = request.user
-#     if user.role != 'doctor':
-#         return Response({"error": "Only doctors can access this endpoint."}, status=status.HTTP_403_FORBIDDEN)
-    
-#     try:
-#         profile = DoctorProfile.objects.get(doctor=user)
-#     except DoctorProfile.DoesNotExist:
-#         return Response({"error": "Doctor profile not found."}, status=status.HTTP_404_NOT_FOUND)
-
-#     if request.method == 'GET':
-#         serializer = DoctorProfileSerializer(profile)
-#         return Response(serializer.data)
-    
-#     elif request.method == 'PUT':
-#         serializer = DoctorProfileSerializer(profile, data=request.data, partial=True)
-#         if serializer.is_valid():
-#             serializer.save()
-#             return Response(serializer.data, status=status.HTTP_200_OK)
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
 
 
 

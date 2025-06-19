@@ -1,19 +1,26 @@
 from rest_framework import serializers
+from user.serializers import UserSerializer
 from .models import DoctorProfile, DoctorApplication, Certificate
 import datetime
 from django.core.exceptions import ValidationError
 import os
-# from .models import DoctorProfile
+from django.db import transaction
 from django.contrib.auth import get_user_model
-import datetime
 from user.serializers import UserSerializer
+from multiselectfield import MultiSelectField
 
+
+
+User = get_user_model()
 
 def validate_file_extension(file):
     ext = os.path.splitext(file.name)[1]
     valid_extensions = ['.pdf', '.jpg', '.jpeg', '.png']
     if ext.lower() not in valid_extensions:
         raise ValidationError('Unsupported file extension.')
+    max_size = 5 * 1024 * 1024  # 5MB
+    if file.size > max_size:
+        raise ValidationError('File size exceeds 5MB limit.')
 
 class CertificateSerializer(serializers.ModelSerializer):
     class Meta:
@@ -33,33 +40,33 @@ class DoctorApplicationSerializer(serializers.ModelSerializer):
         fields = ['id', 'user', 'bio', 'specialization', 'certificates', 'certificate_files', 'status', 'submitted_at']
         read_only_fields = ['id', 'status', 'submitted_at', 'certificate_files', 'user']
 
+    def validate_certificates(self, value):
+        if not value:
+            raise serializers.ValidationError("At least one certificate is required.")
+        if len(value) > 5:
+            raise serializers.ValidationError("Cannot upload more than 5 certificates.")
+        return value
+
     def create(self, validated_data):
-        certificate_files = validated_data.pop('certificates')
-        user = self.context['request'].user
+        with transaction.atomic():
+            certificate_files = validated_data.pop('certificates')
+            user = self.context['request'].user
 
-        if hasattr(user, 'doctor_application'):
-            raise serializers.ValidationError("Application already submitted.")
+            # Validation moved here from perform_create
+            if hasattr(user, 'doctor_application'):
+                raise serializers.ValidationError("Application already submitted.")
 
-        application = DoctorApplication.objects.create(user=user, **validated_data)
+            application = DoctorApplication.objects.create(user=user, **validated_data)
 
-        for file in certificate_files:
-            # Each file has already passed validation at this point
-            Certificate.objects.create(application=application, file=file)
+            for file in certificate_files:
+                Certificate.objects.create(application=application, file=file)
 
-        return application
+            return application
 
-
-
-
+class ReviewSerializer(serializers.Serializer):
+    status = serializers.ChoiceField(choices=['approved', 'rejected'])
 
 
-User = get_user_model()
-
-from rest_framework import serializers
-import datetime
-from multiselectfield import MultiSelectField
-from .models import DoctorProfile
-from user.serializers import UserSerializer
 
 class DoctorProfileSerializer(serializers.ModelSerializer):
     available_times = serializers.JSONField()

@@ -1,7 +1,11 @@
-import { useState } from "react";
-import axios from "axios";
+import { useState, useEffect } from "react";
+import { useOutletContext } from "react-router-dom";
+import axios from "../utils/axiosInstance"; // Use custom axios instance
+import { toast } from "react-toastify";
 
 export default function DoctorApplication() {
+  const { user } = useOutletContext();
+
   const [formData, setFormData] = useState({
     bio: "",
     specialization: "",
@@ -17,15 +21,29 @@ export default function DoctorApplication() {
 
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
-    const validTypes = ["application/pdf", "image/jpeg", "image/png"];
+    const validTypes = [
+      "application/pdf",
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+    ];
+    const maxSize = 5 * 1024 * 1024; // 5MB
     const invalidFiles = files.filter(
-      (file) => !validTypes.includes(file.type)
+      (file) => !validTypes.includes(file.type) || file.size > maxSize
     );
 
     if (invalidFiles.length > 0) {
       setErrors((prev) => ({
         ...prev,
-        certificates: "Only PDF, JPG, and PNG files are allowed.",
+        certificates: "Only PDF, JPG, and PNG files under 5MB are allowed.",
+      }));
+      return;
+    }
+
+    if (formData.certificates.length + files.length > 5) {
+      setErrors((prev) => ({
+        ...prev,
+        certificates: "Cannot upload more than 5 certificates.",
       }));
       return;
     }
@@ -68,27 +86,73 @@ export default function DoctorApplication() {
       return;
     }
 
+    const token =
+      localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
+    if (!token) {
+      toast.error("Please log in to submit an application.", {
+        position: "bottom-right",
+      });
+      return;
+    }
+
+    // Debugging: Log token, API URL, and payload
+    console.log("Submitting with token:", token);
+    console.log(
+      "API URL:",
+      `${import.meta.env.VITE_API_BASE_URL}/api/applications/`
+    );
+    console.log("Payload:", {
+      bio: formData.bio,
+      specialization: formData.specialization,
+      certificates: formData.certificates.map((file) => ({
+        name: file.name,
+        type: file.type,
+        size: (file.size / 1024 / 1024).toFixed(2) + "MB",
+      })),
+    });
+
     setIsSubmitting(true);
     const formDataToSend = new FormData();
     formDataToSend.append("bio", formData.bio);
     formDataToSend.append("specialization", formData.specialization);
-    formData.certificates.forEach((file, index) => {
-      formDataToSend.append(`certificates[${index}]`, file);
+    formData.certificates.forEach((file) => {
+      formDataToSend.append("certificates", file); // Use 'certificates' as array
     });
 
     try {
-      await axios.post("/api/doctor-application/", formDataToSend, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-          "Content-Type": "multipart/form-data",
-        },
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_BASE_URL}/api/applications/`,
+        formDataToSend,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            // Content-Type is set automatically by axios for FormData
+          },
+        }
+      );
+      console.log("Submission successful:", response.data);
+      toast.success("Application submitted successfully!", {
+        position: "bottom-right",
       });
-      alert("Application submitted successfully!");
       setFormData({ bio: "", specialization: "", certificates: [] });
       setCertificatePreviews([]);
     } catch (error) {
-      console.error("Error submitting application:", error);
-      alert("Failed to submit application. Please try again.");
+      console.error("Error submitting application:", {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message,
+        headers: error.response?.headers,
+      });
+      const errorMessage =
+        error.response?.data?.non_field_errors?.[0] ||
+        error.response?.data?.detail ||
+        error.response?.data?.certificates?.[0] ||
+        error.response?.data?.bio?.[0] ||
+        error.response?.data?.specialization?.[0] ||
+        "Failed to submit application. Please try again.";
+      toast.error(errorMessage, {
+        position: "bottom-right",
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -96,8 +160,18 @@ export default function DoctorApplication() {
 
   const getFileType = (file) => {
     const type = file.type.split("/")[1].toUpperCase();
-    return type === "JPEG" || type === "PNG" ? "Image" : "PDF";
+    return type === "JPEG" || type === "JPG" || type === "PNG"
+      ? "Image"
+      : "PDF";
   };
+
+  useEffect(() => {
+    return () => {
+      certificatePreviews.forEach((preview) => {
+        if (preview) URL.revokeObjectURL(preview);
+      });
+    };
+  }, [certificatePreviews]);
 
   return (
     <section className='max-w-4xl mx-auto px-4 sm:px-6 py-12'>
@@ -199,7 +273,7 @@ export default function DoctorApplication() {
           )}
         </div>
 
-        {/* Certificates - Improved Section */}
+        {/* Certificates */}
         <div>
           <label
             htmlFor='certificates'
@@ -215,10 +289,13 @@ export default function DoctorApplication() {
               accept='.pdf,.jpg,.jpeg,.png'
               onChange={handleFileChange}
               className={`w-full rounded-md border ${
-                errors.photoFile ? "border-red-500" : "border-gray-300"
+                errors.certificates ? "border-red-500" : "border-gray-300"
               } focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-slate-800 dark:border-slate-700 dark:text-white p-2`}
+              aria-invalid={errors.certificates ? "true" : "false"}
+              aria-describedby={
+                errors.certificates ? "certificates-error" : undefined
+              }
             />
-            
           </div>
           {errors.certificates && (
             <p

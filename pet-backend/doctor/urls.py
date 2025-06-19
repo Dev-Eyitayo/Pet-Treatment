@@ -3,7 +3,7 @@ from .views import DoctorProfileViewSet, DoctorApplicationViewSet
 
 router = DefaultRouter()
 
-router.register('applications', DoctorApplicationViewSet, basename='doctor-application')
+router.register(r'applications', DoctorApplicationViewSet, basename='doctor-application')
 router.register(r'doctorprofiles', DoctorProfileViewSet, basename='doctor-profile')
 
 urlpatterns = router.urls
