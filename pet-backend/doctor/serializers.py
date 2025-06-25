@@ -7,17 +7,12 @@ import os
 from django.db import transaction
 from django.contrib.auth import get_user_model
 from user.serializers import UserSerializer
-from multiselectfield import MultiSelectField
-
-
-
-User = get_user_model()
 
 def validate_file_extension(file):
-    ext = os.path.splitext(file.name)[1]
+    ext = os.path.splitext(file.name)[1].lower()
     valid_extensions = ['.pdf', '.jpg', '.jpeg', '.png']
-    if ext.lower() not in valid_extensions:
-        raise ValidationError('Unsupported file extension.')
+    if ext not in valid_extensions:
+        raise ValidationError('Unsupported file extension. Allowed: PDF, JPG, PNG.')
     max_size = 5 * 1024 * 1024  # 5MB
     if file.size > max_size:
         raise ValidationError('File size exceeds 5MB limit.')
@@ -32,41 +27,43 @@ class DoctorApplicationSerializer(serializers.ModelSerializer):
     certificate_files = CertificateSerializer(many=True, read_only=True)
     certificates = serializers.ListField(
         child=serializers.FileField(validators=[validate_file_extension]),
-        write_only=True
+        write_only=True,
+        required=True
     )
 
     class Meta:
         model = DoctorApplication
         fields = ['id', 'user', 'bio', 'specialization', 'certificates', 'certificate_files', 'status', 'submitted_at']
-        read_only_fields = ['id', 'status', 'submitted_at', 'certificate_files', 'user']
+        read_only_fields = ['id', 'user', 'status', 'submitted_at', 'certificate_files']
 
-    def validate_certificates(self, value):
-        if not value:
-            raise serializers.ValidationError("At least one certificate is required.")
-        if len(value) > 5:
-            raise serializers.ValidationError("Cannot upload more than 5 certificates.")
-        return value
+    def validate(self, data):
+        if not data.get('certificates'):
+            raise serializers.ValidationError({"certificates": "At least one certificate is required."})
+        if len(data['certificates']) > 5:
+            raise serializers.ValidationError({"certificates": "Cannot upload more than 5 certificates."})
+        return data
+
+    def to_internal_value(self, data):
+        data = data.copy()  # Create mutable copy
+        if 'certificates[]' in data:
+            data.setlist('certificates', data.getlist('certificates[]'))
+            data.pop('certificates[]', None)
+        return super().to_internal_value(data)
 
     def create(self, validated_data):
+        from django.db import transaction
         with transaction.atomic():
-            certificate_files = validated_data.pop('certificates')
+            certificates = validated_data.pop('certificates', [])
             user = self.context['request'].user
-
-            # Validation moved here from perform_create
             if hasattr(user, 'doctor_application'):
-                raise serializers.ValidationError("Application already submitted.")
-
+                raise serializers.ValidationError({"non_field_errors": "Application already submitted."})
             application = DoctorApplication.objects.create(user=user, **validated_data)
-
-            for file in certificate_files:
+            for file in certificates:
                 Certificate.objects.create(application=application, file=file)
-
             return application
 
 class ReviewSerializer(serializers.Serializer):
     status = serializers.ChoiceField(choices=['approved', 'rejected'])
-
-
 
 class DoctorProfileSerializer(serializers.ModelSerializer):
     available_times = serializers.JSONField()

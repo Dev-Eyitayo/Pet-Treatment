@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useOutletContext } from "react-router-dom";
-import axios from "../utils/axiosInstance"; // Use custom axios instance
+import axios from "../utils/axiosInstance"; // Custom axios instance
 import { toast } from "react-toastify";
 
 export default function DoctorApplication() {
@@ -28,6 +28,7 @@ export default function DoctorApplication() {
       "image/png",
     ];
     const maxSize = 5 * 1024 * 1024; // 5MB
+
     const invalidFiles = files.filter(
       (file) => !validTypes.includes(file.type) || file.size > maxSize
     );
@@ -95,42 +96,34 @@ export default function DoctorApplication() {
       return;
     }
 
-    // Debugging: Log token, API URL, and payload
+    const formDataToSend = new FormData();
+    formDataToSend.append("bio", formData.bio);
+    formDataToSend.append("specialization", formData.specialization);
+    formData.certificates.forEach((file) => {
+      formDataToSend.append("certificates[]", file);
+    });
+
     console.log("Submitting with token:", token);
     console.log(
       "API URL:",
       `${import.meta.env.VITE_API_BASE_URL}/api/applications/`
     );
-    console.log("Payload:", {
-      bio: formData.bio,
-      specialization: formData.specialization,
-      certificates: formData.certificates.map((file) => ({
-        name: file.name,
-        type: file.type,
-        size: (file.size / 1024 / 1024).toFixed(2) + "MB",
-      })),
-    });
-
-    setIsSubmitting(true);
-    const formDataToSend = new FormData();
-    formDataToSend.append("bio", formData.bio);
-    formDataToSend.append("specialization", formData.specialization);
-    formData.certificates.forEach((file) => {
-      formDataToSend.append("certificates", file); // Use 'certificates' as array
-    });
+    console.log("FormData entries:");
+    for (let [key, value] of formDataToSend.entries()) {
+      console.log(`${key}:`, value instanceof File ? value.name : value);
+    }
 
     try {
+      setIsSubmitting(true);
       const response = await axios.post(
         `${import.meta.env.VITE_API_BASE_URL}/api/applications/`,
         formDataToSend,
         {
           headers: {
             Authorization: `Bearer ${token}`,
-            // Content-Type is set automatically by axios for FormData
           },
         }
       );
-      console.log("Submission successful:", response.data);
       toast.success("Application submitted successfully!", {
         position: "bottom-right",
       });
@@ -141,18 +134,15 @@ export default function DoctorApplication() {
         status: error.response?.status,
         data: error.response?.data,
         message: error.message,
-        headers: error.response?.headers,
       });
       const errorMessage =
-        error.response?.data?.non_field_errors?.[0] ||
         error.response?.data?.detail ||
         error.response?.data?.certificates?.[0] ||
         error.response?.data?.bio?.[0] ||
         error.response?.data?.specialization?.[0] ||
-        "Failed to submit application. Please try again.";
-      toast.error(errorMessage, {
-        position: "bottom-right",
-      });
+        error.response?.data?.non_field_errors?.[0] ||
+        "Failed to submit application. Please check your input and try again.";
+      toast.error(errorMessage, { position: "bottom-right" });
     } finally {
       setIsSubmitting(false);
     }
@@ -178,12 +168,10 @@ export default function DoctorApplication() {
       <h1 className='text-3xl font-bold text-text-light dark:text-text-dark mb-6'>
         Doctor Application
       </h1>
-
       <form
         onSubmit={handleSubmit}
         className='bg-white dark:bg-slate-800 rounded-2xl shadow-md p-6 sm:p-8 space-y-6'
       >
-        {/* Bio */}
         <div>
           <label
             htmlFor='bio'
@@ -203,31 +191,12 @@ export default function DoctorApplication() {
                 ? "border-red-500"
                 : "border-gray-300 dark:border-slate-600"
             }`}
-            aria-invalid={errors.bio ? "true" : "false"}
-            aria-describedby={errors.bio ? "bio-error" : undefined}
           />
           {errors.bio && (
-            <p
-              id='bio-error'
-              className='text-sm text-red-500 mt-1 flex items-center'
-            >
-              <svg
-                className='w-4 h-4 mr-1'
-                fill='currentColor'
-                viewBox='0 0 20 20'
-              >
-                <path
-                  fillRule='evenodd'
-                  d='M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z'
-                  clipRule='evenodd'
-                />
-              </svg>
-              {errors.bio}
-            </p>
+            <p className='text-sm text-red-500 mt-1'>{errors.bio}</p>
           )}
         </div>
 
-        {/* Specialization */}
         <div>
           <label
             htmlFor='specialization'
@@ -247,33 +216,12 @@ export default function DoctorApplication() {
                 ? "border-red-500"
                 : "border-gray-300 dark:border-slate-600"
             }`}
-            aria-invalid={errors.specialization ? "true" : "false"}
-            aria-describedby={
-              errors.specialization ? "specialization-error" : undefined
-            }
           />
           {errors.specialization && (
-            <p
-              id='specialization-error'
-              className='text-sm text-red-500 mt-1 flex items-center'
-            >
-              <svg
-                className='w-4 h-4 mr-1'
-                fill='currentColor'
-                viewBox='0 0 20 20'
-              >
-                <path
-                  fillRule='evenodd'
-                  d='M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z'
-                  clipRule='evenodd'
-                />
-              </svg>
-              {errors.specialization}
-            </p>
+            <p className='text-sm text-red-500 mt-1'>{errors.specialization}</p>
           )}
         </div>
 
-        {/* Certificates */}
         <div>
           <label
             htmlFor='certificates'
@@ -281,40 +229,18 @@ export default function DoctorApplication() {
           >
             Certificates (PDF, JPG, PNG) <span className='text-red-500'>*</span>
           </label>
-          <div className='relative'>
-            <input
-              id='certificates'
-              type='file'
-              multiple
-              accept='.pdf,.jpg,.jpeg,.png'
-              onChange={handleFileChange}
-              className={`w-full rounded-md border ${
-                errors.certificates ? "border-red-500" : "border-gray-300"
-              } focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-slate-800 dark:border-slate-700 dark:text-white p-2`}
-              aria-invalid={errors.certificates ? "true" : "false"}
-              aria-describedby={
-                errors.certificates ? "certificates-error" : undefined
-              }
-            />
-          </div>
+          <input
+            id='certificates'
+            type='file'
+            multiple
+            accept='.pdf,.jpg,.jpeg,.png'
+            onChange={handleFileChange}
+            className={`w-full rounded-md border ${
+              errors.certificates ? "border-red-500" : "border-gray-300"
+            } focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-slate-800 dark:border-slate-700 dark:text-white p-2`}
+          />
           {errors.certificates && (
-            <p
-              id='certificates-error'
-              className='text-sm text-red-500 mt-1 flex items-center'
-            >
-              <svg
-                className='w-4 h-4 mr-1'
-                fill='currentColor'
-                viewBox='0 0 20 20'
-              >
-                <path
-                  fillRule='evenodd'
-                  d='M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z'
-                  clipRule='evenodd'
-                />
-              </svg>
-              {errors.certificates}
-            </p>
+            <p className='text-sm text-red-500 mt-1'>{errors.certificates}</p>
           )}
 
           {formData.certificates.length > 0 && (
@@ -322,28 +248,26 @@ export default function DoctorApplication() {
               {formData.certificates.map((file, index) => (
                 <div
                   key={index}
-                  className='bg-gray-100 dark:bg-slate-700 rounded-lg shadow-sm p-4 flex items-center gap-4 transition-all duration-200 hover:shadow-md'
+                  className='bg-gray-100 dark:bg-slate-700 rounded-lg p-4 flex items-center gap-4'
                 >
                   {certificatePreviews[index] ? (
                     <img
                       src={certificatePreviews[index]}
                       alt={`Certificate ${file.name}`}
-                      className='w-12 h-12 object-cover rounded-md border border-gray-200 dark:border-slate-600'
+                      className='w-12 h-12 object-cover rounded-md border'
                     />
                   ) : (
                     <svg
-                      className='w-12 h-12 text-gray-400 dark:text-gray-500'
+                      className='w-12 h-12 text-gray-400'
                       fill='currentColor'
                       viewBox='0 0 20 20'
                     >
                       <path d='M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4V5h12v10z' />
                     </svg>
                   )}
-                  <div className='flex-1 min-w-0'>
-                    <p className='text-sm font-medium text-text-light dark:text-text-dark truncate'>
-                      {file.name}
-                    </p>
-                    <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                  <div className='flex-1'>
+                    <p className='text-sm font-medium truncate'>{file.name}</p>
+                    <p className='text-xs text-gray-500'>
                       {getFileType(file)} •{" "}
                       {(file.size / 1024 / 1024).toFixed(2)} MB
                     </p>
@@ -351,7 +275,7 @@ export default function DoctorApplication() {
                   <button
                     type='button'
                     onClick={() => removeCertificate(index)}
-                    className='p-2 text-red-500 hover:text-red-700 hover:bg-red-100 dark:hover:bg-red-900/20 rounded-full transition-all duration-200'
+                    className='p-2 text-red-500 hover:text-red-700 rounded-full'
                     aria-label={`Remove ${file.name}`}
                   >
                     <svg
@@ -376,12 +300,9 @@ export default function DoctorApplication() {
           <button
             type='submit'
             disabled={isSubmitting}
-            className={`w-full bg-blue-600 hover:bg-primary-700 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 ${
+            className={`w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg ${
               isSubmitting ? "opacity-50 cursor-not-allowed" : ""
             }`}
-            aria-label={
-              isSubmitting ? "Submitting application" : "Submit application"
-            }
           >
             {isSubmitting ? "Submitting..." : "Submit Application"}
           </button>

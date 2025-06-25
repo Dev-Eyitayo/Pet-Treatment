@@ -5,10 +5,8 @@ from django.core.exceptions import ValidationError
 
 User = get_user_model()
 
-
-
 def certificate_upload_path(instance, filename):
-    return f'doctor_certificates/{instance.user.id}/{filename}'
+    return f'doctor_certificates/{instance.application.user.id}/{filename}'
 
 class DoctorApplication(models.Model):
     STATUS_CHOICES = (
@@ -20,27 +18,19 @@ class DoctorApplication(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='doctor_application')
     bio = models.TextField()
     specialization = models.CharField(max_length=100)
-    certificates = models.FileField(upload_to=certificate_upload_path)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
     submitted_at = models.DateTimeField(auto_now_add=True)
-    
-    
+
     def save(self, *args, **kwargs):
-        # Check if status changed to approved
-        if self.pk:  # if object already exists in DB
+        if self.pk:
             orig = DoctorApplication.objects.get(pk=self.pk)
             if orig.status != 'approved' and self.status == 'approved':
-                # Update user role here
-                user = self.user
-                user.role = 'doctor'  
-                user.save()
-
+                self.user.role = 'doctor'
+                self.user.save()
         super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.user.email} - {self.status}"
-
-
 
 class Certificate(models.Model):
     application = models.ForeignKey(DoctorApplication, related_name='certificate_files', on_delete=models.CASCADE)
@@ -49,11 +39,6 @@ class Certificate(models.Model):
 
     def __str__(self):
         return f"Certificate for {self.application.user.email}"
-
-
-
-
-
 
 
 
