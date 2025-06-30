@@ -270,7 +270,7 @@ export default function DoctorApplication() {
                     <p className='text-xs text-gray-500'>
                       {getFileType(file)} •{" "}
                       {(file.size / 1024 / 1024).toFixed(2)} MB
-                    </p>
+                    </p>j
                   </div>
                   <button
                     type='button'

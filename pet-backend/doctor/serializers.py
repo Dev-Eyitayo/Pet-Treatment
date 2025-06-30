@@ -7,7 +7,9 @@ import os
 from django.db import transaction
 from django.contrib.auth import get_user_model
 from user.serializers import UserSerializer
-
+from django.db import transaction
+ 
+ 
 def validate_file_extension(file):
     ext = os.path.splitext(file.name)[1].lower()
     valid_extensions = ['.pdf', '.jpg', '.jpeg', '.png']
@@ -51,13 +53,12 @@ class DoctorApplicationSerializer(serializers.ModelSerializer):
         return super().to_internal_value(data)
 
     def create(self, validated_data):
-        from django.db import transaction
         with transaction.atomic():
             certificates = validated_data.pop('certificates', [])
             user = self.context['request'].user
             if hasattr(user, 'doctor_application'):
                 raise serializers.ValidationError({"non_field_errors": "Application already submitted."})
-            application = DoctorApplication.objects.create(user=user, **validated_data)
+            application = DoctorApplication.objects.create(**validated_data)
             for file in certificates:
                 Certificate.objects.create(application=application, file=file)
             return application

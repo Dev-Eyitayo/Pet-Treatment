@@ -6,6 +6,7 @@ from .models import Appointment
 from .serializers import AppointmentSerializer
 from django.utils import timezone
 from datetime import date
+from utils.auth import get_safe_user
 
 class AppointmentViewSet(viewsets.ModelViewSet):
     queryset = Appointment.objects.all()
@@ -13,7 +14,10 @@ class AppointmentViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        user = self.request.user
+        user = get_safe_user(self)
+        if not user:
+            return Appointment.objects.none()
+        
         if user.role == 'doctor':
             return Appointment.objects.filter(doctor=user)
         return Appointment.objects.filter(user=user)

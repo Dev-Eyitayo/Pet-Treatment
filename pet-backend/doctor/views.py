@@ -7,7 +7,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 import json
 from rest_framework.permissions import AllowAny, IsAuthenticated
-
+from utils.auth import get_safe_user
 
 
 User = get_user_model()
@@ -18,7 +18,11 @@ class DoctorApplicationViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        if self.request.user.is_staff:
+        user = get_safe_user(self)
+        if not user:
+            return DoctorApplication.objects.none()
+        
+        if user.is_staff:
             return DoctorApplication.objects.all()
         return DoctorApplication.objects.filter(user=self.request.user)
 

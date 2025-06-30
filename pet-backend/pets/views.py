@@ -3,13 +3,15 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from .models import Pet
 from .serializers import PetSerializer
-
+from utils.auth import get_safe_user
 class PetViewSet(viewsets.ModelViewSet):
     serializer_class = PetSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        user = self.request.user
+        user = get_safe_user(self)
+        if not user:
+            return Pet.objects.none()   
         if user.is_staff:
             return Pet.objects.all()
         return Pet.objects.filter(owner=user)
