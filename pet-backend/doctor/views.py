@@ -8,9 +8,38 @@ from rest_framework.decorators import action
 import json
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from utils.auth import get_safe_user
+from rest_framework.views import APIView
+import cloudinary
+import time
 
 
 User = get_user_model()
+
+class GenerateCloudinarySignatureView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        timestamp = int(time.time())
+        folder = "doctor_certificates"
+
+        params_to_sign = {
+            "timestamp": timestamp,
+            "folder": folder,
+        }
+
+        signature = cloudinary.utils.api_sign_request(
+            params_to_sign, cloudinary.config().api_secret
+        )
+
+        return Response({
+            "timestamp": timestamp,
+            "signature": signature,
+            "api_key": cloudinary.config().api_key,
+            "cloud_name": cloudinary.config().cloud_name,
+            "folder": folder
+        })
+
+
 
 class DoctorApplicationViewSet(viewsets.ModelViewSet):
     queryset = DoctorApplication.objects.all()

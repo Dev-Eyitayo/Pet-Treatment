@@ -22,7 +22,7 @@ def validate_file_extension(file):
 class CertificateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Certificate
-        fields = ['id', 'file', 'uploaded_at']
+        fields = ['id', 'file_url', 'uploaded_at']
         read_only_fields = ['id', 'uploaded_at']
 
 class DoctorApplicationSerializer(serializers.ModelSerializer):
