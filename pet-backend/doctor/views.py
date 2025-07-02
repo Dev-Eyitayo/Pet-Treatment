@@ -3,6 +3,7 @@ from rest_framework.exceptions import PermissionDenied, NotFound
 from .models import DoctorProfile, DoctorApplication
 from .serializers import DoctorProfileSerializer, DoctorApplicationSerializer
 from django.contrib.auth import get_user_model
+from django.conf import settings
 from rest_framework.response import Response
 from rest_framework.decorators import action
 import json
@@ -13,14 +14,17 @@ import cloudinary
 import time
 
 
-User = get_user_model()
-
 class GenerateCloudinarySignatureView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, *args, **kwargs):
         timestamp = int(time.time())
-        folder = "doctor_certificates"
+        folder = request.query_params.get("folder", "misc_uploads")
+
+        # Optional: restrict allowed folders for security
+        allowed_folders = ["doctor_certificates", "profile_pictures"]
+        if folder not in allowed_folders:
+            return Response({"error": "Invalid folder name."}, status=400)
 
         params_to_sign = {
             "timestamp": timestamp,
@@ -28,17 +32,16 @@ class GenerateCloudinarySignatureView(APIView):
         }
 
         signature = cloudinary.utils.api_sign_request(
-            params_to_sign, cloudinary.config().api_secret
+            params_to_sign, settings.CLOUDINARY_API_SECRET  # use from settings
         )
 
         return Response({
             "timestamp": timestamp,
             "signature": signature,
-            "api_key": cloudinary.config().api_key,
-            "cloud_name": cloudinary.config().cloud_name,
+            "api_key": settings.CLOUDINARY_API_KEY,
+            "cloud_name": settings.CLOUDINARY_CLOUD_NAME,  # fixed here
             "folder": folder
         })
-
 
 
 class DoctorApplicationViewSet(viewsets.ModelViewSet):
@@ -76,7 +79,6 @@ class DoctorApplicationViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         status_value = serializer.validated_data['status']
 
-        # Additional validation: prevent re-reviewing finalized applications
         if application.status in ['approved', 'rejected']:
             return Response({"detail": f"Application is already {application.status}."}, status=400)
 
@@ -85,11 +87,21 @@ class DoctorApplicationViewSet(viewsets.ModelViewSet):
             application.save()
 
             if status_value == 'approved':
-                # Ensure user model has a 'role' field
                 application.user.role = 'doctor'
                 application.user.save()
 
+            elif status_value == 'rejected':
+                # delete the certificates and files from Cloudinary
+                for cert in application.certificate_files.all():
+                    try:
+                        public_id = cert.file_url.split('/')[-1].split('.')[0]
+                        cloudinary.uploader.destroy(f"doctor_certificates/{public_id}")
+                        cert.delete()
+                    except Exception as e:
+                        print(f"Error cleaning certificate: {e}")
+
         return Response({"detail": f"Application {status_value} successfully."})
+
 
 
 

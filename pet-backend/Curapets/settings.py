@@ -11,7 +11,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-@_7tr6cc5sc@#!ixsnp)1ef&19*rg(-5@4m8*wwnneoa86zf8a'
+SECRET_KEY = config('DJANGO_SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -20,7 +20,6 @@ ALLOWED_HOSTS = []
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",   # Vite
-    # "http://localhost:3000",   # Next.js or Create React App
 ]
 
 CORS_ALLOW_CREDENTIALS = True
@@ -39,6 +38,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'multiselectfield',
+    'cloudinary',
+    'cloudinary_storage',
     'django_json_widget',
     'drf_yasg',
     'user',
@@ -91,6 +92,8 @@ DATABASES = {
 
 
 CLOUDINARY_CLOUD_NAME = config('CLOUDINARY_CLOUD_NAME')
+print("LOADED CLOUDINARY NAME:", config("CLOUDINARY_CLOUD_NAME"))
+
 CLOUDINARY_API_KEY = config('CLOUDINARY_API_KEY')
 CLOUDINARY_API_SECRET = config('CLOUDINARY_API_SECRET')
 
@@ -151,7 +154,7 @@ SWAGGER_SETTINGS = {
             'description': "Enter **'Bearer &lt;your token&gt;'**",
         }
     },
-    'USE_SESSION_AUTH': False,  # Optional: if you don't want login/logout buttons
+    'USE_SESSION_AUTH': False,  
 }
 
 
@@ -174,7 +177,7 @@ USE_TZ = True
 STATIC_URL = 'static/'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
-
+# DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field

@@ -34,7 +34,7 @@ class DoctorApplication(models.Model):
 
 class Certificate(models.Model):
     application = models.ForeignKey(DoctorApplication, related_name='certificate_files', on_delete=models.CASCADE)
-    file_url = models.URLField()
+    file_url = models.URLField(null=False, blank=False)
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

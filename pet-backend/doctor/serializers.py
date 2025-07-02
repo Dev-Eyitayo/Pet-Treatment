@@ -10,14 +10,14 @@ from user.serializers import UserSerializer
 from django.db import transaction
  
  
-def validate_file_extension(file):
-    ext = os.path.splitext(file.name)[1].lower()
-    valid_extensions = ['.pdf', '.jpg', '.jpeg', '.png']
-    if ext not in valid_extensions:
-        raise ValidationError('Unsupported file extension. Allowed: PDF, JPG, PNG.')
-    max_size = 5 * 1024 * 1024  # 5MB
-    if file.size > max_size:
-        raise ValidationError('File size exceeds 5MB limit.')
+# def validate_file_extension(file):
+#     ext = os.path.splitext(file.name)[1].lower()
+#     valid_extensions = ['.pdf', '.jpg', '.jpeg', '.png']
+#     if ext not in valid_extensions:
+#         raise ValidationError('Unsupported file extension. Allowed: PDF, JPG, PNG.')
+#     max_size = 5 * 1024 * 1024  # 5MB
+#     if file.size > max_size:
+#         raise ValidationError('File size exceeds 5MB limit.')
 
 class CertificateSerializer(serializers.ModelSerializer):
     class Meta:
@@ -28,10 +28,11 @@ class CertificateSerializer(serializers.ModelSerializer):
 class DoctorApplicationSerializer(serializers.ModelSerializer):
     certificate_files = CertificateSerializer(many=True, read_only=True)
     certificates = serializers.ListField(
-        child=serializers.FileField(validators=[validate_file_extension]),
+        child=serializers.URLField(), 
         write_only=True,
         required=True
     )
+
 
     class Meta:
         model = DoctorApplication
@@ -54,14 +55,19 @@ class DoctorApplicationSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         with transaction.atomic():
-            certificates = validated_data.pop('certificates', [])
+            certificate_urls = validated_data.pop('certificates', [])
             user = self.context['request'].user
+
             if hasattr(user, 'doctor_application'):
                 raise serializers.ValidationError({"non_field_errors": "Application already submitted."})
+
             application = DoctorApplication.objects.create(**validated_data)
-            for file in certificates:
-                Certificate.objects.create(application=application, file=file)
+
+            for url in certificate_urls:
+                Certificate.objects.create(application=application, file_url=url)  # store URL
+
             return application
+
 
 class ReviewSerializer(serializers.Serializer):
     status = serializers.ChoiceField(choices=['approved', 'rejected'])
