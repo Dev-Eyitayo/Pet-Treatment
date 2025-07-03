@@ -2,22 +2,15 @@ from rest_framework import serializers
 from user.serializers import UserSerializer
 from .models import DoctorProfile, DoctorApplication, Certificate
 import datetime
-from django.core.exceptions import ValidationError
+# from django.core.exceptions import ValidationError
 import os
 from django.db import transaction
 from django.contrib.auth import get_user_model
 from user.serializers import UserSerializer
 from django.db import transaction
+from rest_framework.exceptions import ValidationError
  
- 
-# def validate_file_extension(file):
-#     ext = os.path.splitext(file.name)[1].lower()
-#     valid_extensions = ['.pdf', '.jpg', '.jpeg', '.png']
-#     if ext not in valid_extensions:
-#         raise ValidationError('Unsupported file extension. Allowed: PDF, JPG, PNG.')
-#     max_size = 5 * 1024 * 1024  # 5MB
-#     if file.size > max_size:
-#         raise ValidationError('File size exceeds 5MB limit.')
+
 
 class CertificateSerializer(serializers.ModelSerializer):
     class Meta:
@@ -59,12 +52,12 @@ class DoctorApplicationSerializer(serializers.ModelSerializer):
             user = self.context['request'].user
 
             if hasattr(user, 'doctor_application'):
-                raise serializers.ValidationError({"non_field_errors": "Application already submitted."})
+                raise ValidationError({"detail": "Application already submitted."})
 
             application = DoctorApplication.objects.create(**validated_data)
 
             for url in certificate_urls:
-                Certificate.objects.create(application=application, file_url=url)  # store URL
+                Certificate.objects.create(application=application, file_url=url)  
 
             return application
 

@@ -29,24 +29,6 @@ export default function DoctorApplication() {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
 
-    // Real-time validation for bio
-    if (name === "bio") {
-      if (value.length > 1000) {
-        setErrors((prev) => ({
-          ...prev,
-          bio: "Bio must not exceed 1000 characters",
-        }));
-        toast.error("Bio must not exceed 1000 characters");
-      } else if (value.length < 50 && value.length > 0) {
-        setErrors((prev) => ({
-          ...prev,
-          bio: "Bio must be at least 50 characters",
-        }));
-        toast.error("Bio must be at least 50 characters");
-      } else {
-        setErrors((prev) => ({ ...prev, bio: "" }));
-      }
-    }
   };
 
   const handleFileChange = async (e) => {
@@ -80,7 +62,7 @@ export default function DoctorApplication() {
         ...prev,
         certificates: errorMessage,
       }));
-      toast.error(errorMessage); // ❌ Toast for exceeding certificate limit
+      toast.error(errorMessage);
       return;
     }
 
@@ -107,7 +89,7 @@ export default function DoctorApplication() {
         ...uploadedUrls.map((url) => (url.includes("image") ? url : null)),
       ]);
       setErrors((prev) => ({ ...prev, certificates: "" }));
-      toast.success("Certificates uploaded successfully!"); // ✅ Toast for successful upload
+      toast.success("Certificates uploaded successfully!"); 
     } catch (err) {
       console.error("Upload error:", err);
       const errorMessage =
@@ -116,7 +98,7 @@ export default function DoctorApplication() {
         ...prev,
         certificates: errorMessage,
       }));
-      toast.error(errorMessage); // ❌ Toast for upload error
+      toast.error(errorMessage); 
     } finally {
       setIsUploading(false);
     }
@@ -136,7 +118,7 @@ export default function DoctorApplication() {
     }));
     setCertificatePreviews((prev) => prev.filter((_, i) => i !== index));
     setCertificateMetadata((prev) => prev.filter((_, i) => i !== index));
-    toast("Certificate removed"); // ℹ️ Toast for certificate removal
+    // toast("Certificate removed"); // ℹ️ Toast for certificate removal
   };
 
   const handleSubmit = async (e) => {
@@ -167,7 +149,7 @@ export default function DoctorApplication() {
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       const errorMessages = Object.values(newErrors).join("; ");
-      toast.error(`Please fix the following errors: ${errorMessages}`); // ❌ Toast for invalid fields
+      toast.error(`${errorMessages}`); 
       setIsSubmitting(false);
       return;
     }
@@ -183,18 +165,22 @@ export default function DoctorApplication() {
     try {
       await axios.post("/applications/", submissionData);
       setSubmissionSuccess(true);
-      toast.success("Application submitted successfully!"); // ✅ Toast for successful submission
+      toast.success("Application submitted successfully!"); 
     } catch (err) {
       console.error("Submission error:", err);
       const errorMessage =
-        err.response?.data?.detail ||
-        err.response?.data?.non_field_errors?.[0] ||
+        err.response?.data?.detail || 
+        err.response?.data?.non_field_errors?.[0] || 
         Object.entries(err.response?.data || {})
-          .map(([key, val]) => `${key}: ${val}`)
+          .map(
+            ([key, val]) =>
+              `${key}: ${Array.isArray(val) ? val.join(", ") : val}`
+          )
           .join("; ") ||
         "Failed to submit application. Please try again.";
+
       setErrors({ submit: errorMessage });
-      toast.error(errorMessage); // ❌ Toast for backend error (e.g., "Application already submitted")
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -211,7 +197,6 @@ export default function DoctorApplication() {
             Your application has been successfully submitted and is pending
             review. You will be notified once it is processed.
           </p>
-          {/* Removed "Submit Another Application" button */}
         </div>
       </section>
     );
@@ -226,9 +211,7 @@ export default function DoctorApplication() {
         onSubmit={handleSubmit}
         className='bg-white dark:bg-slate-800 rounded-2xl shadow-md p-6 sm:p-8 space-y-6'
       >
-        {errors.submit && (
-          <p className='text-sm text-red-500 mt-1'>{errors.submit}</p>
-        )}
+        
         <div>
           <label
             htmlFor='bio'
