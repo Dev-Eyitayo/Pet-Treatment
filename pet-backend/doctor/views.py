@@ -43,6 +43,13 @@ class GenerateCloudinarySignatureView(APIView):
             "folder": folder
         })
 
+class DoctorApplicationStatusView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+            submitted = hasattr(request.user, 'doctor_application')
+            return Response({"submitted": submitted})
+
 
 class DoctorApplicationViewSet(viewsets.ModelViewSet):
     queryset = DoctorApplication.objects.all()

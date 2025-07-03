@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "../utils/axiosInstance";
 import { toast } from "react-toastify";
 import { useCloudinaryUpload } from "../hooks/useCloudinaryUpload";
+// import { useState,  } from "react";
+import LoadingSpinner from "../components/LoadingSpinner";
 
 export default function DoctorApplication() {
   const [formData, setFormData] = useState({
@@ -9,14 +11,33 @@ export default function DoctorApplication() {
     specialization: "",
     certificates: [],
   });
+  const [hasSubmitted, setHasSubmitted] = useState(null);
   const [certificateMetadata, setCertificateMetadata] = useState([]);
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [certificatePreviews, setCertificatePreviews] = useState([]);
   const [submissionSuccess, setSubmissionSuccess] = useState(false);
-
+  const [isLoading, setIsLoading] = useState(true);
   const { uploadToCloudinary } = useCloudinaryUpload();
+
+  useEffect(() => {
+    const fetchSubmissionStatus = async () => {
+      setIsLoading(true);
+      try {
+        const res = await axios.get("/applications/status");
+        setHasSubmitted(res.data.submitted);
+      } catch (error) {
+        console.error("Error checking submission status:", error);
+        toast.error("Failed to check application status.");
+        setHasSubmitted(false);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchSubmissionStatus();
+  }, []);
 
   const validSpecializations = [
     "Pediatrician",
@@ -28,7 +49,6 @@ export default function DoctorApplication() {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
-
   };
 
   const handleFileChange = async (e) => {
@@ -89,7 +109,7 @@ export default function DoctorApplication() {
         ...uploadedUrls.map((url) => (url.includes("image") ? url : null)),
       ]);
       setErrors((prev) => ({ ...prev, certificates: "" }));
-      toast.success("Certificates uploaded successfully!"); 
+      toast.success("Certificates uploaded successfully!");
     } catch (err) {
       console.error("Upload error:", err);
       const errorMessage =
@@ -98,7 +118,7 @@ export default function DoctorApplication() {
         ...prev,
         certificates: errorMessage,
       }));
-      toast.error(errorMessage); 
+      toast.error(errorMessage);
     } finally {
       setIsUploading(false);
     }
@@ -149,7 +169,7 @@ export default function DoctorApplication() {
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       const errorMessages = Object.values(newErrors).join("; ");
-      toast.error(`${errorMessages}`); 
+      toast.error(`${errorMessages}`);
       setIsSubmitting(false);
       return;
     }
@@ -165,12 +185,12 @@ export default function DoctorApplication() {
     try {
       await axios.post("/applications/", submissionData);
       setSubmissionSuccess(true);
-      toast.success("Application submitted successfully!"); 
+      toast.success("Application submitted successfully!");
     } catch (err) {
       console.error("Submission error:", err);
       const errorMessage =
-        err.response?.data?.detail || 
-        err.response?.data?.non_field_errors?.[0] || 
+        err.response?.data?.detail ||
+        err.response?.data?.non_field_errors?.[0] ||
         Object.entries(err.response?.data || {})
           .map(
             ([key, val]) =>
@@ -186,7 +206,18 @@ export default function DoctorApplication() {
     }
   };
 
-  if (submissionSuccess) {
+  if (isLoading) {
+    return (
+      <section className='max-w-4xl mx-auto px-4 sm:px-6 py-12'>
+        <h1 className='text-3xl font-bold text-gray-900 dark:text-white mb-6'>
+          Doctor Application
+        </h1>
+        <LoadingSpinner />
+      </section>
+    );
+  }
+
+  if (hasSubmitted || submissionSuccess) {
     return (
       <section className='max-w-4xl mx-auto px-4 sm:px-6 py-12'>
         <h1 className='text-3xl font-bold text-gray-900 dark:text-white mb-6'>
@@ -211,7 +242,6 @@ export default function DoctorApplication() {
         onSubmit={handleSubmit}
         className='bg-white dark:bg-slate-800 rounded-2xl shadow-md p-6 sm:p-8 space-y-6'
       >
-        
         <div>
           <label
             htmlFor='bio'

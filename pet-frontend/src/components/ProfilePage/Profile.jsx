@@ -174,7 +174,7 @@ export default function Profile() {
       try {
         setLoading(true);
         const response = await axios.get(
-          `${import.meta.env.VITE_API_BASE_URL}/api/doctorprofiles/me/`,
+          `${import.meta.env.VITE_API_BASE_URL}/api/doctorprofiles/`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         setDoctorProfile(response.data);
