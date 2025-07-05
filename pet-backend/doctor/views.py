@@ -112,6 +112,7 @@ class DoctorApplicationViewSet(viewsets.ModelViewSet):
 
 
 
+
 class DoctorProfileViewSet(viewsets.ModelViewSet):
     queryset = DoctorProfile.objects.all()
     serializer_class = DoctorProfileSerializer
@@ -120,6 +121,17 @@ class DoctorProfileViewSet(viewsets.ModelViewSet):
         if self.action in ['list', 'retrieve']:
             return [AllowAny()]  # Allow all users to view profiles
         return [IsAuthenticated()]  # Require authentication for create/update/delete
+
+    def parse_json_fields(self, data):
+        parsed = data.copy()
+        for field in ['available_days', 'available_times']:
+            value = parsed.get(field)
+            if isinstance(value, str):
+                try:
+                    parsed[field] = json.loads(value)
+                except json.JSONDecodeError:
+                    raise ValueError(f"Invalid JSON format for {field}")
+        return parsed
 
     def get_object(self):
         if self.kwargs.get('pk') == 'me':
@@ -134,51 +146,33 @@ class DoctorProfileViewSet(viewsets.ModelViewSet):
     def list(self, request, *args, **kwargs):
         return super().list(request, *args, **kwargs)  # Allow all profiles to be listed
 
-    def perform_create(self, serializer):
-        if self.request.user.role != 'doctor':
+    def create(self, request, *args, **kwargs):
+        if request.user.role != 'doctor':
             raise PermissionDenied("Only doctors can create doctor profiles.")
-        serializer.save(doctor=self.request.user)
+        try:
+            data = self.parse_json_fields(request.data)
+        except ValueError as e:
+            return Response({str(e): "Invalid JSON format."}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(doctor=request.user)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
         if instance.doctor != request.user and not request.user.is_staff:
             raise PermissionDenied("You can only update your own profile.")
 
-        # Extract doctor data
-        doctor_data = {
-            'bio': request.data.get('bio'),
-            'specialization': request.data.get('specialization'),
-            'years_experience': request.data.get('years_experience'),
-            'address': request.data.get('address'),
-            'available_days': request.data.get('available_days'),
-            'available_times': request.data.get('available_times'),
-        }
+        try:
+            doctor_data = self.parse_json_fields(request.data)
+        except ValueError as e:
+            return Response({str(e): "Invalid JSON format."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Parse JSON strings if necessary
-        if isinstance(doctor_data.get('available_days'), str):
-            try:
-                doctor_data['available_days'] = json.loads(doctor_data['available_days'])
-            except json.JSONDecodeError:
-                return Response(
-                    {"available_days": "Invalid JSON format for available_days"},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-
-        if isinstance(doctor_data.get('available_times'), str):
-            try:
-                doctor_data['available_times'] = json.loads(doctor_data['available_times'])
-            except json.JSONDecodeError:
-                return Response(
-                    {"available_times": "Invalid JSON format for available_times"},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-
-        # Validate and update DoctorProfile model
         serializer = self.get_serializer(instance, data=doctor_data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def partial_update(self, request, *args, **kwargs):
         return self.update(request, *args, **kwargs)
@@ -188,3 +182,27 @@ class DoctorProfileViewSet(viewsets.ModelViewSet):
         if instance.doctor != request.user and not request.user.is_staff:
             raise PermissionDenied("You can only delete your own profile.")
         return super().destroy(request, *args, **kwargs)
+
+    @action(detail=False, methods=['get', 'put', 'post'], url_path='me', permission_classes=[IsAuthenticated])
+    def me(self, request):
+        try:
+            profile = DoctorProfile.objects.get(doctor=request.user)
+        except DoctorProfile.DoesNotExist:
+            profile = None
+
+        if request.method == 'GET':
+            if not profile:
+                return Response({"detail": "Doctor profile not found."}, status=status.HTTP_404_NOT_FOUND)
+            serializer = self.get_serializer(profile)
+            return Response(serializer.data)
+
+        if request.method in ['PUT', 'POST']:
+            try:
+                data = self.parse_json_fields(request.data)
+            except ValueError as e:
+                return Response({str(e): "Invalid JSON format."}, status=status.HTTP_400_BAD_REQUEST)
+
+            serializer = self.get_serializer(profile, data=data, partial=True) if profile else self.get_serializer(data=data)
+            serializer.is_valid(raise_exception=True)
+            serializer.save(doctor=request.user)
+            return Response(serializer.data, status=status.HTTP_200_OK)

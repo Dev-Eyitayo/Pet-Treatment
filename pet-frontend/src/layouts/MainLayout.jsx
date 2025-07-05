@@ -137,7 +137,13 @@ const MainLayout = () => {
           errorMessage = errorData.error;
         } else {
           errorMessage = Object.entries(errorData)
-            .map(([key, errors]) => `${key}: ${errors.join(", ")}`)
+            .map(([key, error]) => {
+              if (Array.isArray(error)) {
+                return `${key}: ${error.join(", ")}`;
+              } else {
+                return `${key}: ${error}`;
+              }
+            })
             .join("; ");
         }
       }

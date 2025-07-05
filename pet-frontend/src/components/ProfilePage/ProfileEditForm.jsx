@@ -287,11 +287,21 @@ const ProfileEditForm = ({ user, profileData, updateProfile, setEditMode }) => {
       const backendErrors = err.response?.data || {};
       const newErrors = {};
 
+      // Handle string, array, object, or other types of errors
       if (typeof backendErrors === "string") {
         newErrors.global = backendErrors;
       } else {
         Object.entries(backendErrors).forEach(([field, error]) => {
-          newErrors[field] = Array.isArray(error) ? error.join(", ") : error;
+          if (Array.isArray(error)) {
+            newErrors[field] = error.join(", ");
+          } else if (typeof error === "string") {
+            newErrors[field] = error;
+          } else if (error && typeof error === "object") {
+            // Handle nested objects (e.g., { "Monday": ["Invalid time"] })
+            newErrors[field] = Object.values(error).flat().join(", ");
+          } else {
+            newErrors[field] = "An error occurred";
+          }
         });
       }
 
@@ -308,7 +318,6 @@ const ProfileEditForm = ({ user, profileData, updateProfile, setEditMode }) => {
     }
   };
 
-  
   return (
     <form
       onSubmit={handleSubmit}

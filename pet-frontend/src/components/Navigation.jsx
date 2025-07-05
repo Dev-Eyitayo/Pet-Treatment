@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import {
   Home,
   Calendar,
@@ -7,16 +8,76 @@ import {
   Stethoscope,
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
+import axios from "../utils/axiosInstance"; // Assuming axiosInstance is configured with auth headers
+import { toast } from "react-toastify";
 
-const navItems = [
-  { name: "Home", icon: Home, to: "/" },
-  { name: "Apply as Doctor", icon: Stethoscope, to: "/doctor-application" },
-  { name: "Pets", icon: PawPrint, to: "/pets" },
-  { name: "Profile", icon: User, to: "/profile" },
-];
+const Navigation = ({ handleLogout }) => {
+  const [userRole, setUserRole] = useState(null); // State to store user role
+  const [isLoading, setIsLoading] = useState(true); // Optional: Loading state
 
-const Navigation = ({handleLogout}) => {
-  
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      try {
+        setIsLoading(true);
+        const response = await axios.get("/user/me/");
+        setUserRole(response.data.role); // Store the role (e.g., "doctor" or "user")
+      } catch (error) {
+        console.error("Error fetching user role:", error);
+        toast.error("Failed to load user profile.");
+        setUserRole("user"); // Fallback to "user" role to show the "Apply as Doctor" link
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchUserRole();
+  }, []);
+
+  // Define navItems, conditionally including "Apply as Doctor"
+  const navItems = [
+    { name: "Home", icon: Home, to: "/" },
+    ...(userRole !== "doctor" && !isLoading
+      ? [
+          {
+            name: "Apply as Doctor",
+            icon: Stethoscope,
+            to: "/doctor-application",
+          },
+        ]
+      : []),
+    { name: "Pets", icon: PawPrint, to: "/pets" },
+    { name: "Profile", icon: User, to: "/profile" },
+  ];
+
+  // Optional: Show a loading state while fetching user role
+  if (isLoading) {
+    return (
+      <aside className='hidden md:flex md:flex-col bg-background-light dark:bg-background-dark h-screen w-64 p-6 border-r border-gray-200 dark:border-gray-700 fixed justify-between'>
+        <div className='flex justify-center items-center h-full'>
+          <svg
+            className='animate-spin h-8 w-8 text-primary'
+            xmlns='http://www.w3.org/2000/svg'
+            fill='none'
+            viewBox='0 0 24 24'
+          >
+            <circle
+              className='opacity-25'
+              cx='12'
+              cy='12'
+              r='10'
+              stroke='currentColor'
+              strokeWidth='4'
+            ></circle>
+            <path
+              className='opacity-75'
+              fill='currentColor'
+              d='M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'
+            ></path>
+          </svg>
+        </div>
+      </aside>
+    );
+  }
 
   return (
     <>
