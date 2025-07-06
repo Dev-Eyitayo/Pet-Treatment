@@ -49,7 +49,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'multiselectfield',
     'cloudinary',
-    'cloudinary_storage',
+    # 'cloudinary_storage',
     'django_json_widget',
     'drf_yasg',
     'user',
@@ -57,7 +57,7 @@ INSTALLED_APPS = [
     'pets',
     'appointments',
     'notifications',
-    'channels',
+    # 'channels',
 ]
 
 MIDDLEWARE = [
