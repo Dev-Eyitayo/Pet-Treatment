@@ -26,6 +26,7 @@ urlpatterns = [
     path('api/', include('doctor.urls')),
     path('api/', include('appointments.urls')), 
     path('api/', include('pets.urls')),     
+    path('api/', include('notifications.urls')),     
 
     # Swagger & Redoc URLs
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
