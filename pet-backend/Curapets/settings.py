@@ -104,7 +104,7 @@ DATABASES = {
 
 
 CLOUDINARY_CLOUD_NAME = config('CLOUDINARY_CLOUD_NAME')
-print("LOADED CLOUDINARY NAME:", config("CLOUDINARY_CLOUD_NAME"))
+# print("LOADED CLOUDINARY NAME:", config("CLOUDINARY_CLOUD_NAME"))
 
 CLOUDINARY_API_KEY = config('CLOUDINARY_API_KEY')
 CLOUDINARY_API_SECRET = config('CLOUDINARY_API_SECRET')
@@ -144,6 +144,17 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.UserRateThrottle',   
+        'rest_framework.throttling.AnonRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'user': '1000/day',    
+        'anon': '10/minute',
+    },
+    'EXCEPTION_HANDLER': 'rest_framework.views.exception_handler',
+
+    
 }
 
 
