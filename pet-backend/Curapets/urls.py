@@ -10,8 +10,8 @@ schema_view = get_schema_view(
     openapi.Info(
         title="Curapets API",
         default_version='v1',
-        description="API documentation for the Curapets Backend System",
-        terms_of_service="https://www.example.com/terms/",
+        description="API documentation for the Curapets Pet Doctor Appointment booking Backend System",
+        # terms_of_service="https://www.example.com/terms/",
         contact=openapi.Contact(email="ezekieleyitayo2020@gmail.com"),
         license=openapi.License(name="MIT License"),
     ),
