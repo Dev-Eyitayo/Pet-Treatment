@@ -25,16 +25,6 @@ CORS_ALLOWED_ORIGINS = [
 
 CORS_ALLOW_CREDENTIALS = True
 
-# ASGI_APPLICATION = 'config.asgi.application'
-
-# CHANNEL_LAYERS = {
-#     'default': {
-#         'BACKEND': 'channels_redis.core.RedisChannelLayer',
-#         'CONFIG': {
-#             "hosts": [("127.0.0.1", 6379)],
-#         },
-#     },
-# }
 
 # Application definition
 
@@ -50,7 +40,6 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'multiselectfield',
     'cloudinary',
-    # 'cloudinary_storage',
     'django_json_widget',
     'drf_yasg',
     'user',
@@ -58,7 +47,6 @@ INSTALLED_APPS = [
     'pets',
     'appointments',
     'notifications',
-    # 'channels',
 ]
 
 MIDDLEWARE = [
@@ -110,14 +98,15 @@ X_FRAME_OPTIONS = 'DENY'
 #         'NAME': BASE_DIR / 'db.sqlite3',
 #     }
 # }
-print("DATABASE_URL:", config('DATABASE_URL', default='Not Set'))
+
+
 
 DATABASES = {
     'default': dj_database_url.config(default=config('DATABASE_URL'))
 }
 
 CLOUDINARY_CLOUD_NAME = config('CLOUDINARY_CLOUD_NAME')
-# print("LOADED CLOUDINARY NAME:", config("CLOUDINARY_CLOUD_NAME"))
+
 
 CLOUDINARY_API_KEY = config('CLOUDINARY_API_KEY')
 CLOUDINARY_API_SECRET = config('CLOUDINARY_API_SECRET')
