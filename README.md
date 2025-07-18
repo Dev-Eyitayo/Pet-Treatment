@@ -12,7 +12,7 @@
 ### 🔗 Live API
 
 You can explore the live Swagger docs at:  
-👉 [https://curapet.onrender.com/swagger/](https://curapet.onrender.com/)
+👉 [https://curapet.onrender.com/](https://curapet.onrender.com/)
 
 
 ---
