@@ -9,6 +9,8 @@
 
 **Note:** the frontend is still under development while the backend is live already.
 
+### 🔗 Live API
+
 You can explore the live Swagger docs at:  
 👉 [https://curapet.onrender.com/swagger/](https://curapet.onrender.com/swagger/)
 
@@ -36,8 +38,6 @@ You can explore the live Swagger docs at:
 - Cloudinary for image uploads
 - drf-yasg for Swagger documentation
 
-**Frontend:**
-- [Vite](https://vitejs.dev/) + [React/Vue](#) *(Replace with actual tech if applicable)*
 
 **Deployment:**
 - Render (Web + PostgreSQL services)
@@ -87,6 +87,5 @@ CLOUDINARY_CLOUD_NAME=your-cloud-name
 CLOUDINARY_API_KEY=your-api-key
 CLOUDINARY_API_SECRET=your-api-secret
 
-### 🔗 Live API
 
 
