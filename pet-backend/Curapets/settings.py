@@ -100,12 +100,13 @@ X_FRAME_OPTIONS = 'DENY'
 # }
 
 
+
 DATABASES = {
     'default': dj_database_url.config(default=config('DATABASE_URL'))
 }
 
 CLOUDINARY_CLOUD_NAME = config('CLOUDINARY_CLOUD_NAME')
-# print("LOADED CLOUDINARY NAME:", config("CLOUDINARY_CLOUD_NAME"))
+
 
 CLOUDINARY_API_KEY = config('CLOUDINARY_API_KEY')
 CLOUDINARY_API_SECRET = config('CLOUDINARY_API_SECRET')
@@ -200,7 +201,7 @@ USE_TZ = True
 
 MEDIA_URL = '/media/'
 STATIC_URL = 'static/'
-STATIC_ROOT = BASE_DIR / "staticfiles"  # ✅ ADD THIS LINE
+STATIC_ROOT = BASE_DIR / "staticfiles"  
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 # DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
