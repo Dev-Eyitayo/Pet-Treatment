@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'pets',
     'appointments',
     'notifications',
+    'channels',
 ]
 
 MIDDLEWARE = [
@@ -79,6 +80,17 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'Curapets.wsgi.application'
+ASGI_APPLICATION = 'Curapets.asgi.application'
+
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [("redis", 6379)],
+        },
+    },
+}
 
 SECURE_HSTS_SECONDS = 31536000
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
