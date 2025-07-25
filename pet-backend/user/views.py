@@ -49,6 +49,7 @@ def get_current_user(request):
 
 class PasswordResetRequestView(generics.GenericAPIView):
     authentication_classes = []
+    serializer_class = PasswordResetSerializer
     permission_classes = [AllowAny]
 
     def post(self, request):
