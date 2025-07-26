@@ -7,7 +7,7 @@ django.setup()
 from datetime import date, time
 from appointments.models import Appointment
 from notifications.models import Notification
-from user.models import CustomUser as User  # You used 'user', not 'users'
+from user.models import CustomUser as User  
 from pets.models import Pet
 
 # Clear old test data
@@ -16,7 +16,7 @@ Notification.objects.all().delete()
 
 # Create test users (add required firstname and lastname)
 patient = User.objects.create_user(
-    email="patient@test.com",
+    email="patient2@test.com",
     password="1234",
     firstname="John",
     lastname="Doe",
@@ -24,7 +24,7 @@ patient = User.objects.create_user(
 )
 
 doctor = User.objects.create_user(
-    email="doctor@test.com",
+    email="doctor2@test.com",
     password="1234",
     firstname="Dr.",
     lastname="Smith",
