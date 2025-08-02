@@ -88,4 +88,8 @@ CLOUDINARY_API_KEY=your-api-key
 CLOUDINARY_API_SECRET=your-api-secret
 
 
+# Dev mode at this point
+to run the application
+(venv) PS C:\Users\HP\OneDrive\Desktop\Pet-Treatment\pet-backend> docker-compose up
 
+(venv) PS C:\Users\HP\OneDrive\Desktop\Pet-Treatment\pet-backend> daphne Curapets.asgi:application
