@@ -78,7 +78,7 @@ export default function Login() {
         );
 
         console.log("Login response:", response.data);
-        const { access } = response.data; // Use 'access' instead of 'token'
+        const { access } = response.data; 
         console.log("Stored token:", access);
 
         if (rememberMe) {

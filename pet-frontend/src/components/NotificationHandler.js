@@ -38,5 +38,5 @@ export default function NotificationHandler({ onNewNotification }) {
     };
   }, []);
 
-  return null; // This is a non-UI component
+  return null;
 }
