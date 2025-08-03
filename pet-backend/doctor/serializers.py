@@ -2,7 +2,6 @@ from rest_framework import serializers
 from user.serializers import UserSerializer
 from .models import DoctorProfile, DoctorApplication, Certificate
 import datetime
-# from django.core.exceptions import ValidationError
 import os
 from django.db import transaction
 from django.contrib.auth import get_user_model
