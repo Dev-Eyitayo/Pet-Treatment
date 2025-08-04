@@ -4,7 +4,7 @@ export default function NotificationHandler({ onNewNotification }) {
   const socketRef = useRef(null);
 
   useEffect(() => {
-    const token = localStorage.getItem("authToken"); // or sessionStorage
+    const token = localStorage.getItem("authToken") || sessionStorage.getItem("authToken"); 
 
     if (!token) return;
 

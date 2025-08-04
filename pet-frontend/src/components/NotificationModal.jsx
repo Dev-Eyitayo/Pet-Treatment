@@ -1,19 +1,43 @@
 import { useEffect, useRef } from "react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
+import axios from "../utils/axiosInstance";
+import { toast } from "react-toastify";
 
 export default function NotificationModal({ isOpen, onClose, notifications }) {
   const modalRef = useRef();
 
-  // Close when clicking outside
   useEffect(() => {
-    function handleClickOutside(event) {
+    const handleClickOutside = (event) => {
       if (modalRef.current && !modalRef.current.contains(event.target)) {
         onClose();
       }
-    }
+    };
+
+    const markNotificationsAsRead = async () => {
+      try {
+        const token =
+          localStorage.getItem("authToken") ||
+          sessionStorage.getItem("authToken");
+        if (!token) return;
+
+        await axios.post(
+          `${import.meta.env.VITE_API_BASE_URL}/api/notifications/mark-all-read/`,
+          {},
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+      } catch (err) {
+        console.error("Failed to mark notifications as read:", err);
+        toast.error("Failed to update notifications.", {
+          position: "bottom-right",
+        });
+      }
+    };
+
     if (isOpen) {
       document.addEventListener("mousedown", handleClickOutside);
+      markNotificationsAsRead();
     }
+
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
@@ -40,9 +64,9 @@ export default function NotificationModal({ isOpen, onClose, notifications }) {
             No new notifications
           </p>
         ) : (
-          notifications.map((note, index) => (
+          notifications.map((note) => (
             <div
-              key={index}
+              key={note.id}
               className='bg-gray-50 dark:bg-slate-700 p-3 rounded-lg shadow-sm hover:bg-gray-100 dark:hover:bg-slate-600 transition'
             >
               <p className='text-sm text-gray-700 dark:text-gray-200'>

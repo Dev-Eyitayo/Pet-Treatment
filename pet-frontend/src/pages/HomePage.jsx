@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 import ThemeToggle from "../components/ThemeToggle";
 import DoctorList from "../components/DoctorList";
 import NotificationModal from "../components/NotificationModal";
-import axios from "../utils/axiosInstance"; // Use custom axios instance with interceptor
+import axios from "../utils/axiosInstance";
 import { toast } from "react-toastify";
 
 export default function Home() {
@@ -16,25 +16,104 @@ export default function Home() {
   const [todaysAppointments, setTodaysAppointments] = useState([]);
   const [appointmentRequests, setAppointmentRequests] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [notifications, setNotifications] = useState([
-    {
-      message: "New appointment request from Emily Davis",
-      time: "2 mins ago",
-      read: false,
-    },
-    { message: "Buddy has a checkup tomorrow", time: "1 hour ago", read: true },
-  ]);
-  const unreadCount = notifications.filter((n) => !n.read).length;
-
+  const [notifications, setNotifications] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // WebSocket connection for real-time notifications
+  useEffect(() => {
+    let socket;
+    let reconnectAttempts = 0;
+    const maxReconnectAttempts = 5;
+    const reconnectInterval = 5000;
+
+    const connectWebSocket = () => {
+      const token =
+        localStorage.getItem("authToken") ||
+        sessionStorage.getItem("authToken");
+      if (!token) {
+        toast.error("No user found. Please log in.", {
+          position: "bottom-right",
+        });
+        return;
+      }
+
+      socket = new WebSocket(
+        `ws://127.0.0.1:8000/ws/notifications/?token=${token}`
+      );
+
+      socket.onopen = () => {
+        console.log("WebSocket connected");
+        reconnectAttempts = 0;
+        toast.success("Connected to notification server", {
+          position: "bottom-right",
+        });
+      };
+
+      socket.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          setNotifications((prev) => [
+            {
+              id: data.id || Date.now(), // Fallback to timestamp if id is missing
+              message: data.verb || data.message, // Use verb from backend
+              time:
+                data.timestamp || data.time || new Date().toLocaleTimeString(),
+              read: data.is_read || false, // Use is_read from backend
+            },
+            ...prev,
+          ]);
+          toast.info(`New notification: ${data.verb || data.message}`, {
+            position: "bottom-right",
+          });
+        } catch (err) {
+          console.error("Failed to parse WebSocket message:", err);
+        }
+      };
+
+      socket.onerror = (err) => {
+        console.error("WebSocket error:", err);
+        toast.error("WebSocket error occurred.", { position: "bottom-right" });
+      };
+
+      socket.onclose = (event) => {
+        console.log(
+          "WebSocket disconnected with code:",
+          event.code,
+          "reason:",
+          event.reason
+        );
+        if (reconnectAttempts < maxReconnectAttempts) {
+          setTimeout(() => {
+            console.log(
+              `Reconnecting WebSocket (attempt ${reconnectAttempts + 1})`
+            );
+            reconnectAttempts++;
+            connectWebSocket();
+          }, reconnectInterval);
+        } else {
+          toast.error("Lost connection to notification server.", {
+            position: "bottom-right",
+          });
+        }
+      };
+    };
+
+    connectWebSocket();
+
+    return () => {
+      if (socket) socket.close();
+    };
+  }, []);
+
+  // Mark notifications as read in state when modal opens
   useEffect(() => {
     if (isModalOpen) {
       setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
     }
   }, [isModalOpen]);
 
+  // Fetch initial data
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
@@ -43,7 +122,6 @@ export default function Home() {
       const token =
         localStorage.getItem("authToken") ||
         sessionStorage.getItem("authToken");
-
       if (!token) {
         toast.error("No user found. Please log in.", {
           position: "bottom-right",
@@ -52,27 +130,36 @@ export default function Home() {
         return;
       }
 
-      const headers = {
-        Authorization: `Bearer ${token}`,
-      };
+      const headers = { Authorization: `Bearer ${token}` };
 
       try {
+        // Fetch notifications
+        const notificationsResponse = await axios.get(
+          `${import.meta.env.VITE_API_BASE_URL}/api/notifications/`,
+          { headers }
+        );
+        setNotifications(
+          notificationsResponse.data.map((note) => ({
+            id: note.id,
+            message: note.verb, // Use verb as message
+            time: note.timestamp || new Date().toLocaleTimeString(),
+            read: note.is_read || false, // Use is_read
+          }))
+        );
+
         if (userRole === "user") {
-          // Fetch upcoming appointments for users
           const appointmentsResponse = await axios.get(
             `${import.meta.env.VITE_API_BASE_URL}/api/appointments/upcoming/`,
             { headers }
           );
           setAppointments(appointmentsResponse.data);
         } else {
-          // Fetch today's appointments for doctors
           const todaysAppointmentsResponse = await axios.get(
             `${import.meta.env.VITE_API_BASE_URL}/api/appointments/today/`,
             { headers }
           );
           setTodaysAppointments(todaysAppointmentsResponse.data);
 
-          // Fetch appointment requests for doctors
           const requestsResponse = await axios.get(
             `${import.meta.env.VITE_API_BASE_URL}/api/appointments/requests/`,
             { headers }
@@ -97,6 +184,8 @@ export default function Home() {
     fetchData();
   }, [userRole]);
 
+  const unreadCount = notifications.filter((n) => !n.read).length;
+
   if (isLoading) {
     return <div className='text-center p-6'>Loading...</div>;
   }
@@ -107,7 +196,6 @@ export default function Home() {
 
   return (
     <div className='max-w-7xl mx-auto p-1 sm:p-2 lg:p-6'>
-      {/* Header */}
       <div className='flex justify-between items-center gap-4 mb-10'>
         <div className='md:z-[-300] text-xl font-bold text-gray-900 dark:text-white'>
           CuraPets
@@ -132,12 +220,10 @@ export default function Home() {
               notifications={notifications}
             />
           </div>
-
           <ThemeToggle />
         </div>
       </div>
 
-      {/* Welcome + CTA */}
       <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8'>
         <h1 className='text-2xl font-extrabold tracking-tight text-gray-900 dark:text-white'>
           Welcome back, {user?.firstname || "User"}!
@@ -154,15 +240,12 @@ export default function Home() {
 
       {userRole === "user" ? (
         <div className='grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8'>
-          {/* Meet Our Doctors */}
           <section>
             <h2 className='text-2xl font-bold mb-6 text-gray-900 dark:text-white'>
               Meet Our Doctors
             </h2>
             <DoctorList />
           </section>
-
-          {/* Upcoming Appointments */}
           <section>
             <h2 className='text-xl sm:text-2xl font-semibold mb-4 sm:mb-6 text-gray-900 dark:text-white'>
               Upcoming Appointments
@@ -203,7 +286,6 @@ export default function Home() {
         </div>
       ) : (
         <div className='grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 lg:gap-10'>
-          {/* Today's Appointments */}
           <section>
             <h2 className='text-xl sm:text-2xl font-semibold mb-4 sm:mb-6 text-gray-900 dark:text-white'>
               Today's Appointments
@@ -253,8 +335,6 @@ export default function Home() {
               )}
             </div>
           </section>
-
-          {/* Appointment Requests */}
           <section>
             <h2 className='text-xl sm:text-2xl font-semibold mb-4 sm:mb-6 text-gray-900 dark:text-white'>
               Appointment Requests
@@ -289,7 +369,7 @@ export default function Home() {
                           Owner: {req.patientName}
                         </p>
                         <p className='text-sm text-gray-400 dark:text-gray-500 mt-1'>
-                          {req.time} {/* Use 'time' as 'requestedTime' */}
+                          {req.time}
                         </p>
                       </div>
                     </div>
