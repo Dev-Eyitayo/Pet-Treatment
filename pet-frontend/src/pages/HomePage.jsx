@@ -45,35 +45,31 @@ export default function Home() {
       socket.onopen = () => {
         console.log("WebSocket connected");
         reconnectAttempts = 0;
-        toast.success("Connected to notification server", {
+        // toast.success("Connected to notification server", {
+        //   position: "bottom-right",
+        // });
+      };
+
+      socket.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        setNotifications((prev) => [
+          {
+            id: data.id || Date.now(),
+            message: `${data.actor} ${data.verb} ${data.target}`,
+            time:
+              data.timestamp || data.time || new Date().toLocaleTimeString(),
+            read: data.is_read || false,
+          },
+          ...prev,
+        ]);
+        toast.info(`${data.actor} ${data.verb} ${data.target}`, {
           position: "bottom-right",
         });
       };
 
-      socket.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          setNotifications((prev) => [
-            {
-              id: data.id || Date.now(), // Fallback to timestamp if id is missing
-              message: data.verb || data.message, // Use verb from backend
-              time:
-                data.timestamp || data.time || new Date().toLocaleTimeString(),
-              read: data.is_read || false, // Use is_read from backend
-            },
-            ...prev,
-          ]);
-          toast.info(`New notification: ${data.verb || data.message}`, {
-            position: "bottom-right",
-          });
-        } catch (err) {
-          console.error("Failed to parse WebSocket message:", err);
-        }
-      };
-
       socket.onerror = (err) => {
         console.error("WebSocket error:", err);
-        toast.error("WebSocket error occurred.", { position: "bottom-right" });
+        // toast.error("WebSocket error occurred.", { position: "bottom-right" });
       };
 
       socket.onclose = (event) => {
@@ -92,9 +88,9 @@ export default function Home() {
             connectWebSocket();
           }, reconnectInterval);
         } else {
-          toast.error("Lost connection to notification server.", {
-            position: "bottom-right",
-          });
+          // toast.error("Lost connection to notification server.", {
+          //   position: "bottom-right",
+          // });
         }
       };
     };
@@ -141,9 +137,9 @@ export default function Home() {
         setNotifications(
           notificationsResponse.data.map((note) => ({
             id: note.id,
-            message: note.verb, // Use verb as message
+            message: `${note.actor} ${note.verb} ${note.target}`,
             time: note.timestamp || new Date().toLocaleTimeString(),
-            read: note.is_read || false, // Use is_read
+            read: note.is_read || false,
           }))
         );
 

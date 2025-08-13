@@ -72,7 +72,7 @@ export default function NotificationModal({ isOpen, onClose, notifications }) {
               <p className='text-sm text-gray-700 dark:text-gray-200'>
                 {note.message}
               </p>
-              <p className='text-xs text-gray-400 mt-1'>{note.time}</p>
+              {/* <p className='text-xs text-gray-400 mt-1'>{note.time}</p> */}
             </div>
           ))
         )}
